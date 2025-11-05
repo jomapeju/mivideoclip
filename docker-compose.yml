@@ -1,0 +1,38 @@
+version: '3.8'
+
+
+services:
+  # 1. Servicio de la Base de Datos PostgreSQL
+  db:
+    image: postgres:14-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432" # Expone el puerto de la DB
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persistencia de los datos
+  # 2. Servicio del Backend (NestJS)
+  ntesjs:
+    build:
+      context: ./myclip_back # Usa el Dockerfile dentro de la carpeta 'backend'
+      dockerfile: Dockerfile
+    container_name: nestjs-app
+    restart: always
+    ports:
+      - "3000:3000" # Puerto de la API
+    environment:
+      # Variables de entorno para que NestJS se conecte a la DB
+      DB_HOST: db # Importante: Usar el nombre del servicio de Docker ('db')
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    depends_on:
+      - db # Asegura que la DB se inicie primero
+
+
+volumes:
+  postgres_data:

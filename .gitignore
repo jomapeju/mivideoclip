@@ -1,0 +1,25 @@
+# Ignorar archivos de entorno
+.env
+
+# Ignorar carpetas de dependencias
+node_modules/
+# Otras carpetas específicas de cada proyecto (si las hay)
+myclip_front/node_modules/
+myclip_back/node_modules/
+
+# Ignorar archivos de build de Next.js
+myclip_front/.next/
+myclip_back/.next/
+
+# Ignorar logs
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Ignorar archivos de Docker
+docker-compose.override.yml
+.docker/
+
+# Ignorar IDEs y editores (Ejemplo: VSCode)
+.vscode/
+.idea/
