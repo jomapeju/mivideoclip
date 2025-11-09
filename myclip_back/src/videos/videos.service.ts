@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as path from 'path'; // Para manejar rutas de archivos
@@ -36,10 +36,65 @@ export class VideosService {
 
         // Guardar metadata en la base de datos
         await this.videosRepository.save(newVideo);
-
-        // NOTA: Aquí iría la llamada al JOB de FFmpeg (en el próximo paso)
-        console.log(`[FFmpeg JOB]: Iniciando procesamiento para archivo: ${rawStoragePath}`);
-
+        
+        // Ejecutar el Job de transcodificación SIN AWAIT.
+        // La API devuelve 201 inmediatamente, y el procesamiento ocurre en segundo plano.
+        this.simulateFFmpegJob(newVideo.video_id); 
+        
         return newVideo;
+    }
+
+    /**
+     * Busca todos los videos subidos por un usuario específico.
+     */
+    async findUserVideos(userId: string): Promise<Video[]> {
+        return this.videosRepository.find({
+            where: { user_id: userId },
+            order: { createdAt: 'DESC' }, // Los más recientes primero
+        });
+    }
+
+    /**
+     * Busca un video por su ID.
+     */
+    async findOne(videoId: string): Promise<Video> {
+        const video = await this.videosRepository.findOne({
+            where: { video_id: videoId },
+        });
+
+        if (!video) {
+            // Manejar error si no se encuentra el video
+            throw new NotFoundException(`Video con ID ${videoId} no encontrado.`); 
+        }
+
+        return video;
+    }
+
+    /**
+     * TODO: SIMULACIÓN: Ejecuta el proceso de transcodificación asíncrono.
+     * En un proyecto real, esto sería un Message Queue (RabbitMQ, SQS) o un Cron Job.
+     */
+    async simulateFFmpegJob(videoId: string) {
+        console.log(`[JOB] Iniciando transcodificación para ${videoId}...`);
+        
+        // Simular tiempo de procesamiento
+        await new Promise(resolve => setTimeout(resolve, 5000)); 
+
+        // Generar URLs simuladas después de "procesar"
+        const streamUrl = `https://cdn.myclip.com/stream/${videoId}/master.m3u8`;
+        const thumbnailUrl = `https://cdn.myclip.com/thumbs/${videoId}/default.jpg`;
+
+        // 1. Actualizar el estado en la base de datos
+        await this.videosRepository.update(
+            { video_id: videoId },
+            {
+                status: VideoStatus.ACTIVE, // Pasa a ACTIVO
+                streamUrlHls: streamUrl,
+                thumbnailUrl: thumbnailUrl,
+                // Opcional: ELIMINAR el archivo crudo original de ./uploads
+            }
+        );
+
+        console.log(`[JOB] Video ${videoId} ACTIVO. URL: ${streamUrl}`);
     }
 }

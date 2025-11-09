@@ -1,6 +1,8 @@
 import { 
     Controller, 
     Post, 
+    Get,
+    Param,
     Body, 
     UseGuards, 
     Request, 
@@ -37,6 +39,21 @@ const multerOptions = {
 export class VideosController {
     constructor(private readonly videosService: VideosService) {}
 
+    @UseGuards(JwtAuthGuard)
+    @Get() // GET /api/v1/videos
+    async getUserVideos(@Request() req): Promise<Video[]> {
+        const userId = req.user.user_id;
+
+        // Lógica de listado de videos del usuario
+        return this.videosService.findUserVideos(userId);
+    }
+    
+    @Get(':id') // GET /api/v1/videos/:id
+    async getOneVideo(@Param('id') id: string): Promise<Video> {
+        // Lógica para obtener un video por su ID
+        return this.videosService.findOne(id);
+    }
+    
     @UseGuards(JwtAuthGuard) // <--- ¡Proteger la ruta con el token!
     @Post('upload')
     // Multer intercepta el campo 'file' del formulario y aplica la configuración
