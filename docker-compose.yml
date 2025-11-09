@@ -34,6 +34,17 @@ services:
       JWT_SECRET: ${JWT_SECRET}
     depends_on:
       - db # Asegura que la DB se inicie primero
+    volumes:
+      # 1. Sincroniza el código fuente local (myclip_back) con el contenedor (/usr/src/app)
+      - ./myclip_back:/usr/src/app
+      
+      # 2. Excluye node_modules del mapeo para usar la versión de Linux/Contenedor
+      - /usr/src/app/node_modules
+      
+      # 3. ¡LA LÍNEA CRÍTICA!: Mapea la carpeta de subidas
+      # El archivo se guarda en /usr/src/app/uploads DENTRO del contenedor.
+      # Lo mapeamos a la carpeta local myclip_back/uploads.
+      - ./myclip_back/uploads:/usr/src/app/uploads
 
 
 volumes:

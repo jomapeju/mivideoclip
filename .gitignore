@@ -11,6 +11,8 @@ myclip_back/node_modules/
 myclip_front/.next/
 myclip_back/.next/
 
+myclip_front/uploads/
+
 # Ignorar logs
 npm-debug.log
 yarn-debug.log
