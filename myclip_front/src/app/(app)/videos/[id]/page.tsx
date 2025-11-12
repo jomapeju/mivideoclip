@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { VideoPlayer } from '../../../../components/VideoPlayer'; // Asegúrate de que esta ruta sea correcta
-import { registerVote, getVideoById } from '../../../../services/videos.service'; // NUEVO SERVICIO
-import { Video } from '../../../../lib/video.types'; // NUEVO TIPO
+import { registerVote, getVideoById, getCommentsByVideoId, createComment } from '../../../../services/videos.service'; // NUEVO SERVICIO
+import { Video, Comment } from '../../../../lib/video.types'; // NUEVO TIPO
 import { useParams } from 'next/navigation';
+import Cookies from 'js-cookie'; // <-- Para verificar la autenticación
 
 const POLLING_INTERVAL = 5000;
 
@@ -17,6 +18,10 @@ export default function VideoDetailPage() {
     const [isVoted, setIsVoted] = useState(false);
     const [isLoadingVote, setIsLoadingVote] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [comments, setComments] = useState<Comment[]>([]);
+    const [newComment, setNewComment] = useState('');
+    const [isPosting, setIsPosting] = useState(false);
+    const isAuthenticated = !!Cookies.get('auth_token');
 
     // Función principal para obtener el video y su estado
     const fetchVideoDetails = useCallback(async () => {
@@ -76,6 +81,43 @@ export default function VideoDetailPage() {
             }
         } finally {
             setIsLoadingVote(false);
+        }
+    };
+
+
+    // Función para recargar la lista de comentarios
+    const loadComments = useCallback(async () => {
+        if (videoId) {
+            try {
+                const data = await getCommentsByVideoId(videoId);
+                setComments(data);
+            } catch (error) {
+                console.error('Fallo al cargar comentarios:', error);
+            }
+        }
+    }, [videoId]);
+
+    // Cargar comentarios al inicio
+    useEffect(() => {
+        loadComments();
+    }, [loadComments]);
+
+    const handlePostComment = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newComment.trim() || isPosting || !isAuthenticated) return;
+
+        setIsPosting(true);
+        try {
+            // Llama a la API para crear el comentario
+            await createComment(videoId, newComment);
+            
+            setNewComment('');
+            await loadComments(); // Recargar la lista
+            
+        } catch (error) {
+            alert("Fallo al publicar el comentario.");
+        } finally {
+            setIsPosting(false);
         }
     };
 
@@ -142,6 +184,54 @@ export default function VideoDetailPage() {
                     <h2 className="text-xl font-semibold">Descripción:</h2>
                     <p className="text-gray-700">{video.description}</p>
                 </div>
+
+                {/* ======================================================= */}
+                {/* === SECCIÓN DE COMENTARIOS === */}
+                {/* ======================================================= */}
+                <div className="mt-8 p-6 bg-white rounded-lg shadow">
+                    <h2 className="text-2xl font-bold mb-4">Comentarios ({comments.length})</h2>
+
+                    {/* 1. Formulario de Comentarios */}
+                    <div className="mb-6">
+                        {isAuthenticated ? (
+                            <form onSubmit={handlePostComment}>
+                                <textarea
+                                    value={newComment}
+                                    onChange={(e) => setNewComment(e.target.value)}
+                                    placeholder="Escribe tu comentario..."
+                                    rows={3}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 mb-2"
+                                    maxLength={500}
+                                    required
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={!newComment.trim() || isPosting}
+                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+                                >
+                                    {isPosting ? 'Publicando...' : 'Publicar Comentario'}
+                                </button>
+                            </form>
+                        ) : (
+                            <p className="text-gray-500">Debes iniciar sesión para comentar.</p>
+                        )}
+                    </div>
+
+                    {/* 2. Lista de Comentarios */}
+                    <div className="space-y-4">
+                        {comments.map((comment) => (
+                            <div key={comment.comment_id} className="border-t pt-4">
+                                <p className="text-gray-800">{comment.content}</p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Por **{comment.user?.username || 'Usuario Desconocido'}**
+                                    {' '}· {new Date(comment.createdAt).toLocaleDateString()}
+                                </p>
+                            </div>
+                        ))}
+                        {comments.length === 0 && <p className="text-gray-500">Sé el primero en comentar este video.</p>}
+                    </div>
+                </div>
+                {/* ======================================================= */}
             </div>
         </div>
     );

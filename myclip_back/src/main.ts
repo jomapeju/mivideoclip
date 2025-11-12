@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -7,6 +8,12 @@ async function bootstrap() {
   // 1. Opcional: Prefijo global de API
   // Útil si quieres que todas tus rutas sean /api/v1/...
   app.setGlobalPrefix('api/v1');
+
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true, // Ignora propiedades no definidas en el DTO
+    forbidNonWhitelisted: true, // Lanza error si hay propiedades extra
+    transform: true, // Transforma los tipos de datos automáticamente
+  }));
 
   // 2. === CONFIGURACIÓN CORS (LA SOLUCIÓN) ===
   app.enableCors({

@@ -17,3 +17,18 @@ export interface VoteResponse {
   message: string;
   video: Video;
 }
+
+export interface UserBasic {
+    user_id: string;
+    username: string;
+    // ... otros campos básicos
+}
+
+export interface Comment {
+    comment_id: string;
+    userId: string;
+    videoId: string;
+    content: string;
+    createdAt: string;
+    user: UserBasic; // El backend nos devuelve el objeto user
+}

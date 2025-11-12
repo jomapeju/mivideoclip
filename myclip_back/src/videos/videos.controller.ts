@@ -17,6 +17,8 @@ import { VideosService } from './videos.service';
 import { CreateVideoDto } from './dto/create-video.dto';
 import * as path from 'path'; // Para manejar rutas de archivos
 import { Video } from './entities/video.entity';
+import { CreateCommentDto } from './dto/create-comment.dto';
+import { Comment } from './entities/comment.entity';
 
 // TODO: Configuración de Multer para guardar el archivo en la carpeta 'uploads'
 const multerOptions = {
@@ -92,5 +94,27 @@ export class VideosController {
       message: 'Voto registrado exitosamente.',
       video: updatedVideo,
     };
+  }
+
+  // =======================================================
+  // === ENDPOINT NUEVO: Obtener Comentarios ===
+  // =======================================================
+  @Get(':id/comments') // GET /api/v1/videos/:id/comments
+  async getComments(@Param('id') videoId: string): Promise<Comment[]> {
+    return this.videosService.findCommentsByVideoId(videoId);
+  }
+
+  // =======================================================
+  // === ENDPOINT NUEVO: Crear Comentario (Protegido) ===
+  // =======================================================
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/comments') // POST /api/v1/videos/:id/comments
+  async postComment(
+    @Param('id') videoId: string,
+    @Request() req,
+    @Body() createCommentDto: CreateCommentDto,
+  ): Promise<Comment> {
+    const userId = req.user.user_id;
+    return this.videosService.createComment(videoId, userId, createCommentDto);
   }
 }

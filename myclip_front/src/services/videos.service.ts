@@ -1,5 +1,5 @@
 import api from './api.service'; // Tu instancia de Axios con el interceptor JWT
-import { Video, VoteResponse } from '../lib/video.types';
+import { Video, VoteResponse, Comment } from '../lib/video.types';
 import axios from 'axios';
 
 // --- (Función de Obtención de Detalles del Video - Necesaria para la página) ---
@@ -36,5 +36,33 @@ export const registerVote = async (videoId: string): Promise<Video> => {
             throw new Error(error.response.data.message);
         }
         throw new Error('Error desconocido al registrar el voto.');
+    }
+};
+
+// --- (Función de Obtención de Comentarios) ---
+
+export const getCommentsByVideoId = async (videoId: string): Promise<Comment[]> => {
+    try {
+        const response = await api.get<Comment[]>(`videos/${videoId}/comments`);
+        return response.data;
+    } catch (error) {
+        throw new Error('Error al cargar los comentarios.');
+    }
+};
+
+// --- (Función de Creación de Comentarios) ---
+
+export const createComment = async (videoId: string, content: string): Promise<Comment> => {
+    try {
+        const response = await api.post<Comment>(
+            `videos/${videoId}/comments`,
+            { content }, // Body con el contenido
+        );
+        return response.data;
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.data?.message) {
+            throw new Error(error.response.data.message);
+        }
+        throw new Error('Error desconocido al publicar el comentario.');
     }
 };

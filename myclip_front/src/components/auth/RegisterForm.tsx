@@ -8,6 +8,7 @@ const RegisterForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
 
@@ -16,7 +17,13 @@ const RegisterForm = () => {
     setError('');
 
     try {
-      await api.post('users', { email, password, name });
+      const dataToSend = {
+          username, 
+          email,
+          password,
+      };
+      
+      await api.post('/auth/register', dataToSend);
       // Redirigir al login después de un registro exitoso
       router.push('/login');
     } catch (err: any) {
@@ -33,8 +40,8 @@ const RegisterForm = () => {
         <label className="block text-sm font-medium mb-1">Nombre</label>
         <input 
           type="text" 
-          value={name} 
-          onChange={(e) => setName(e.target.value)} 
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
           className="w-full p-2 border border-gray-300 rounded"
           required 
         />

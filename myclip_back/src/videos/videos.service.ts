@@ -5,6 +5,8 @@ import * as path from 'path'; // Para manejar rutas de archivos
 import { Video, VideoStatus } from './entities/video.entity';
 import { CreateVideoDto } from './dto/create-video.dto';
 import { Vote } from './entities/vote.entity';
+import { Comment } from './entities/comment.entity';
+import { CreateCommentDto } from './dto/create-comment.dto';
 
 @Injectable()
 export class VideosService {
@@ -13,6 +15,8 @@ export class VideosService {
         private videosRepository: Repository<Video>,
         @InjectRepository(Vote) 
         private votesRepository: Repository<Vote>,
+        @InjectRepository(Comment)
+        private commentsRepository: Repository<Comment>,
     ) {}
 
     /**
@@ -137,4 +141,34 @@ export class VideosService {
         return video; // Devolvemos el video actualizado
     }
     // =======================================================
+
+    /**
+   * Obtiene todos los comentarios de un video, incluyendo los datos del usuario.
+   */
+  async findCommentsByVideoId(videoId: string): Promise<Comment[]> {
+    return this.commentsRepository.find({
+      where: { videoId },
+      relations: ['user'], // Une la tabla de comentarios con la tabla de usuarios
+      order: { createdAt: 'ASC' }, // Comentarios más antiguos primero
+    });
+  }
+
+  /**
+   * Crea un nuevo comentario.
+   */
+  async createComment(videoId: string, userId: string, createCommentDto: CreateCommentDto): Promise<Comment> {
+    // Opcional: Verificar que el video exista (para robustez)
+    const videoExists = await this.videosRepository.count({ where: { video_id: videoId } });
+    if (videoExists === 0) {
+      throw new NotFoundException('El video no existe.');
+    }
+
+    const newComment = this.commentsRepository.create({
+      videoId,
+      userId,
+      content: createCommentDto.content,
+    });
+
+    return this.commentsRepository.save(newComment);
+  }
 }

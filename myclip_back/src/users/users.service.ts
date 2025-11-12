@@ -25,9 +25,12 @@ export class UsersService {
     });
 
     if (existingUser) {
-      throw new ConflictException(
-        'El nombre de usuario o correo electrónico ya está registrado.',
-      );
+      if (existingUser.email === email) {
+        throw new ConflictException('El correo electrónico ya está registrado.');
+      }
+      if (existingUser.username === username) {
+        throw new ConflictException('El nombre de usuario ya está en uso.');
+      }
     }
 
     // 2. Hashear la contraseña (CRÍTICO DE SEGURIDAD)
