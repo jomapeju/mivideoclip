@@ -81,8 +81,8 @@ export class VideosService {
         await new Promise(resolve => setTimeout(resolve, 5000)); 
 
         // Generar URLs simuladas después de "procesar"
-        const streamUrl = `https://cdn.myclip.com/stream/${videoId}/master.m3u8`;
-        const thumbnailUrl = `https://cdn.myclip.com/thumbs/${videoId}/default.jpg`;
+        const streamUrl = `http://cdn.myclip.com/stream/${videoId}/master.m3u8`;
+        const thumbnailUrl = `http://cdn.myclip.com/thumbs/${videoId}/default.jpg`;
 
         // 1. Actualizar el estado en la base de datos
         await this.videosRepository.update(
