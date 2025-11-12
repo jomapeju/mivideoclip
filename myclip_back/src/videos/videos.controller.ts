@@ -72,4 +72,25 @@ export class VideosController {
 
         return this.videosService.uploadAndRegister(createVideoDto, file, userId);
     }
+
+
+    // =======================================================
+  // === ENDPOINT NUEVO: Votar por Video ===
+  // =======================================================
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/vote') // POST /api/v1/videos/:id/vote
+  async voteForVideo(
+    @Param('id') videoId: string,
+    @Request() req,
+  ): Promise<{ message: string; video: Video }> {
+    const userId = req.user.user_id;
+    
+    // Llamar al servicio para registrar el voto y actualizar el contador
+    const updatedVideo = await this.videosService.registerVote(videoId, userId);
+
+    return {
+      message: 'Voto registrado exitosamente.',
+      video: updatedVideo,
+    };
+  }
 }

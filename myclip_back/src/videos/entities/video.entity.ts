@@ -45,6 +45,9 @@ export class Video {
   @Column({ name: 'views_count', default: 0 })
   viewsCount: number;
 
+  @Column({ type: 'int', default: 0, name: 'vote_count' })
+  voteCount: number;
+
   @Column({ type: 'enum', enum: VideoStatus, default: VideoStatus.PENDING })
   status: VideoStatus; // Estado del video
 

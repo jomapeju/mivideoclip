@@ -1,15 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as path from 'path'; // Para manejar rutas de archivos
 import { Video, VideoStatus } from './entities/video.entity';
 import { CreateVideoDto } from './dto/create-video.dto';
+import { Vote } from './entities/vote.entity';
 
 @Injectable()
 export class VideosService {
     constructor(
         @InjectRepository(Video)
         private videosRepository: Repository<Video>,
+        @InjectRepository(Vote) 
+        private votesRepository: Repository<Vote>,
     ) {}
 
     /**
@@ -97,4 +100,41 @@ export class VideosService {
 
         console.log(`[JOB] Video ${videoId} ACTIVO. URL: ${streamUrl}`);
     }
+
+    async registerVote(videoId: string, userId: string): Promise<Video> {
+        // 1. Verificar si el voto ya existe (unicidad)
+        const existingVote = await this.votesRepository.findOne({
+        where: { videoId, userId },
+        });
+
+        if (existingVote) {
+        throw new ConflictException('Ya has votado por este video.');
+        }
+
+        // 2. Verificar que el video exista y esté activo
+        const video = await this.videosRepository.findOne({ where: { video_id: videoId } });
+
+        if (!video) {
+        throw new NotFoundException(`Video con ID ${videoId} no encontrado.`);
+        }
+        
+        // Opcional: Impedir votar videos que no estén ACTIVOS
+        if (video.status !== VideoStatus.ACTIVE) {
+            throw new ConflictException('Solo se puede votar videos activos.');
+        }
+
+        // 3. Crear y guardar el voto
+        const newVote = this.votesRepository.create({
+        videoId: video.video_id,
+        userId: userId,
+        });
+        await this.votesRepository.save(newVote);
+
+        // 4. Actualizar el contador de votos del video
+        video.voteCount += 1;
+        await this.videosRepository.save(video);
+
+        return video; // Devolvemos el video actualizado
+    }
+    // =======================================================
 }
