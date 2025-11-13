@@ -171,4 +171,16 @@ export class VideosService {
 
     return this.commentsRepository.save(newComment);
   }
+
+
+  /**
+ * Obtiene una lista de videos ordenados por el conteo de votos.
+ */
+async findPopularVideos(limit: number = 20): Promise<Video[]> {
+    return this.videosRepository.find({
+        where: { status: VideoStatus.ACTIVE }, // Solo videos activos
+        order: { voteCount: 'DESC', createdAt: 'DESC' }, // Primero por votos, luego por más reciente
+        take: limit, // Limita el número de resultados (ej. Top 20)
+    });
+}
 }

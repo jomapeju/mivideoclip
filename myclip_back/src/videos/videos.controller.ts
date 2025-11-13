@@ -8,7 +8,8 @@ import {
     Request, 
     UseInterceptors, 
     UploadedFile, 
-    BadRequestException 
+    BadRequestException,
+    Query 
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -49,7 +50,19 @@ export class VideosController {
         // Lógica de listado de videos del usuario
         return this.videosService.findUserVideos(userId);
     }
+
+    // =======================================================
+  // === 1. RUTA ESPECÍFICA (DEBE IR PRIMERO) ===
+  // =======================================================
+    @Get('popular') // GET /api/v1/videos/popular
+    async getPopularVideos(@Query('limit') limit: number = 20): Promise<Video[]> {
+        // Si la plataforma crece, esta ruta debería ser pública (no requiere token)
+        return this.videosService.findPopularVideos(Number(limit));
+    }
     
+    // =======================================================
+  // === 2. RUTA DINÁMICA (DEBE IR DESPUÉS) ===
+  // =======================================================
     @Get(':id') // GET /api/v1/videos/:id
     async getOneVideo(@Param('id') id: string): Promise<Video> {
         // Lógica para obtener un video por su ID
@@ -117,4 +130,5 @@ export class VideosController {
     const userId = req.user.user_id;
     return this.videosService.createComment(videoId, userId, createCommentDto);
   }
+
 }

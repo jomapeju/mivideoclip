@@ -85,4 +85,17 @@ export class UsersService {
       username: user.username
     };
   }
+
+
+  /**
+   * Obtiene el ranking de usuarios por puntuación de reputación.
+   */
+  async findUserRanking(limit: number = 10): Promise<User[]> {
+      return this.usersRepository.find({
+          // Seleccionamos solo los campos públicos para el ranking
+          select: ['user_id', 'username', 'reputationScore', 'createdAt'], 
+          order: { reputationScore: 'DESC', createdAt: 'ASC' }, // De mayor reputación
+          take: limit,
+      });
+  }
 }
