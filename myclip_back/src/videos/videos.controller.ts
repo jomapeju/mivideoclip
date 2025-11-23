@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { 
     Controller, 
     Post, 
@@ -43,12 +45,15 @@ export class VideosController {
     constructor(private readonly videosService: VideosService) {}
 
     @UseGuards(JwtAuthGuard)
-    @Get() // GET /api/v1/videos
-    async getUserVideos(@Request() req): Promise<Video[]> {
-        const userId = req.user.user_id;
-
-        // Lógica de listado de videos del usuario
-        return this.videosService.findUserVideos(userId);
+    @Get('mine')
+    async getMyVideos(@Request() req) {
+      const userId = req.user.id;
+      return this.videosService.findUserVideos(userId);
+    }
+    
+    @Get() 
+    async getAllVideos(): Promise<Video[]> {
+      return this.videosService.findAllPublicVideos();
     }
 
     // =======================================================

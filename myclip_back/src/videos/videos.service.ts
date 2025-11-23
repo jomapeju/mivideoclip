@@ -61,6 +61,13 @@ export class VideosService {
         });
     }
 
+    async findAllPublicVideos(): Promise<Video[]> {
+    return this.videosRepository.find({
+        where: { status: VideoStatus.ACTIVE },
+        order: { createdAt: 'DESC' },
+    });
+}
+
     /**
      * Busca un video por su ID.
      */
