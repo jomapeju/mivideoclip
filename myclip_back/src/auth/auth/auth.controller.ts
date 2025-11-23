@@ -6,9 +6,11 @@ import {
   Req,
   Body,
   Res,
+  UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 import { UsersService } from '../../users/users.service';
 import { CreateUserDto } from '../../users/dto/create-user.dto';
@@ -67,7 +69,8 @@ export class AuthController {
     return { message: 'Logged out' };
   }
 
-  @Get('me')
+  @UseGuards(AuthGuard('jwt'))
+ @Get('me')
   @HttpCode(HttpStatus.OK)
   async me(@Req() req) {
     const userId = req.user?.user_id || req.user?.id;

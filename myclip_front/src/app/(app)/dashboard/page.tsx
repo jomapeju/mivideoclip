@@ -1,15 +1,16 @@
 import { VideoList } from '../../../components/VideoList';
-import { getServerUser } from '../../../lib/auth';
+import { getServerUser } from '../../../lib/server/getServerUser';
 import Link from 'next/link';
 
 export default async function DashboardPage() {
+  console.log('await getServerUser():');
   const user = await getServerUser();
   if (!user) {
     // Si llegó aquí, middleware ya debería haber redirigido, pero como fallback:
     return (
       <div>
         <h2>No autenticado</h2>
-        <a href="/(auth)/login">Ir a Login</a>
+        <a href="/login">Ir a Login</a>
       </div>
     );
   }

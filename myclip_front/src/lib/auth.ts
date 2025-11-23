@@ -1,12 +1,10 @@
-export async function getServerUser(
-  apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1',
+
+export async function getClientUser(
+  apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1"
 ) {
   const res = await fetch(`${apiBase}/auth/me`, {
     method: 'GET',
     credentials: 'include',
-    headers: {
-      'cache-control': 'no-store',
-    },
   });
 
   if (!res.ok) return null;
