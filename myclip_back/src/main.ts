@@ -1,6 +1,11 @@
+/* eslint-disable */
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+
+
+const cookieParser = require('cookie-parser');
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,6 +20,9 @@ async function bootstrap() {
     transform: true, // Transforma los tipos de datos automáticamente
   }));
 
+  
+  app.use(cookieParser()); // <= necesario para leer cookies en req.cookies
+  
   // 2. === CONFIGURACIÓN CORS (LA SOLUCIÓN) ===
   app.enableCors({
     // Origen permitido. Aquí permitimos el puerto por defecto de Next.js.
@@ -30,6 +38,6 @@ async function bootstrap() {
   });
   // ===========================================
 
-  await app.listen(process.env.DB_PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
