@@ -6,7 +6,7 @@ import axios from 'axios';
 
 export const getVideoById = async (videoId: string): Promise<Video> => {
     try {
-        const response = await api.get<Video>(`videos/${videoId}`);
+        const response = await api.get<Video>(`/videos/${videoId}`);
         return response.data;
     } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 404) {
@@ -23,7 +23,7 @@ export const registerVote = async (videoId: string): Promise<Video> => {
     try {
         // La instancia 'api' ya se encarga de adjuntar el token JWT.
         const response = await api.post<VoteResponse>(
-            `videos/${videoId}/vote`,
+            `/videos/${videoId}/vote`,
             {}, // Body vacío
         );
         
@@ -43,7 +43,7 @@ export const registerVote = async (videoId: string): Promise<Video> => {
 
 export const getCommentsByVideoId = async (videoId: string): Promise<Comment[]> => {
     try {
-        const response = await api.get<Comment[]>(`videos/${videoId}/comments`);
+        const response = await api.get<Comment[]>(`/videos/${videoId}/comments`);
         return response.data;
     } catch (error) {
         throw new Error('Error al cargar los comentarios.');
@@ -55,7 +55,7 @@ export const getCommentsByVideoId = async (videoId: string): Promise<Comment[]> 
 export const createComment = async (videoId: string, content: string): Promise<Comment> => {
     try {
         const response = await api.post<Comment>(
-            `videos/${videoId}/comments`,
+            `/videos/${videoId}/comments`,
             { content }, // Body con el contenido
         );
         return response.data;

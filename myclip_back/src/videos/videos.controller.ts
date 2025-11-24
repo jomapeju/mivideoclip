@@ -47,7 +47,9 @@ export class VideosController {
     @UseGuards(JwtAuthGuard)
     @Get('mine')
     async getMyVideos(@Request() req) {
-      const userId = req.user.id;
+      // fallback robusto
+      const userId = req.user?.user_id || req.user?.id || req.user?.sub;
+      console.log('>>> USER from JWT (videos/mine):', req.user);
       return this.videosService.findUserVideos(userId);
     }
     
@@ -88,7 +90,8 @@ export class VideosController {
         }
         
         // El user_id se obtiene directamente del token JWT verificado
-        const userId = req.user.user_id;
+        //const userId = req.user.user_id;
+        const userId = req.user?.user_id || req.user?.id || req.user?.sub;
 
         return this.videosService.uploadAndRegister(createVideoDto, file, userId);
     }
@@ -103,7 +106,8 @@ export class VideosController {
     @Param('id') videoId: string,
     @Request() req,
   ): Promise<{ message: string; video: Video }> {
-    const userId = req.user.user_id;
+    //const userId = req.user.user_id;
+    const userId = req.user?.user_id || req.user?.id || req.user?.sub;
     
     // Llamar al servicio para registrar el voto y actualizar el contador
     const updatedVideo = await this.videosService.registerVote(videoId, userId);
@@ -132,7 +136,8 @@ export class VideosController {
     @Request() req,
     @Body() createCommentDto: CreateCommentDto,
   ): Promise<Comment> {
-    const userId = req.user.user_id;
+    //const userId = req.user.user_id;
+    const userId = req.user?.user_id || req.user?.id || req.user?.sub;
     return this.videosService.createComment(videoId, userId, createCommentDto);
   }
 

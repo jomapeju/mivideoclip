@@ -5,8 +5,8 @@ export async function getClientUser(
   const res = await fetch(`${apiBase}/auth/me`, {
     method: 'GET',
     credentials: 'include',
+    headers: { 'cache-control': 'no-store' }
   });
-
   if (!res.ok) return null;
   const data = await res.json();
   return data.user;
