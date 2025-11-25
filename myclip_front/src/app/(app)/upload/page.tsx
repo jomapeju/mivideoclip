@@ -1,32 +1,22 @@
-'use client';
+// src/app/(app)/upload/page.tsx
+import React from 'react';
+import { UploadForm } from '../../../components/UploadForm'; // cambia a default export si es necesario
+import { getServerUser } from '../../../lib/server/getServerUser';
+import { redirect } from 'next/navigation';
 
-import { UploadForm } from '../../../components/UploadForm';
-import { useEffect, useState } from 'react';
-import Cookies from 'js-cookie';
-import { useRouter } from 'next/navigation';
-
-export default function UploadPage() {
-  const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    // Protección de ruta a nivel de frontend (chequea la cookie)
-    const token = Cookies.get('auth_token');
-    if (!token) {
-      router.push('/login');
-    } else {
-      setIsAuthenticated(true);
-    }
-  }, [router]);
-
-  if (!isAuthenticated) {
-    return <div className="p-10 text-center">Redirigiendo a Login...</div>;
+export default async function UploadPage() {
+  // Validación server-side: opcional (middleware ya protege)
+  const user = await getServerUser(); // server helper (ver más abajo)
+  if (!user) {
+    // doble garantía: si no hay sesión se redirige
+    redirect('/login');
   }
-  
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-extrabold text-gray-900 mb-8">Gestión de Subidas</h1>
+        {/* UploadForm es un Client Component */}
         <UploadForm />
       </div>
     </div>

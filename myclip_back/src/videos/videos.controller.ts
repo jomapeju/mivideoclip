@@ -11,7 +11,8 @@ import {
     UseInterceptors, 
     UploadedFile, 
     BadRequestException,
-    Query 
+    Query, 
+    ValidationPipe
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -76,23 +77,18 @@ export class VideosController {
         return this.videosService.findOne(id);
     }
     
-    @UseGuards(JwtAuthGuard) // <--- ¡Proteger la ruta con el token!
+    @UseGuards(JwtAuthGuard)
     @Post('upload')
-    // Multer intercepta el campo 'file' del formulario y aplica la configuración
     @UseInterceptors(FileInterceptor('file', multerOptions))
     async uploadVideo(
         @UploadedFile() file: Express.Multer.File,
-        @Body() createVideoDto: CreateVideoDto,
+        @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false })) createVideoDto: CreateVideoDto,
         @Request() req
     ): Promise<Video> {
         if (!file) {
             throw new BadRequestException('Debe adjuntar un archivo de video.');
         }
-        
-        // El user_id se obtiene directamente del token JWT verificado
-        //const userId = req.user.user_id;
         const userId = req.user?.user_id || req.user?.id || req.user?.sub;
-
         return this.videosService.uploadAndRegister(createVideoDto, file, userId);
     }
 
