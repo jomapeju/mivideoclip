@@ -49,7 +49,6 @@ export class VideosController {
     @UseGuards(JwtAuthGuard)
     @Get('mine')
     async getMyVideos(@Request() req) {
-      // fallback robusto
       const userId = req.user?.user_id || req.user?.id || req.user?.sub;
       console.log('>>> USER from JWT (videos/mine):', req.user);
       return this.videosService.findUserVideos(userId);
@@ -60,96 +59,92 @@ export class VideosController {
       return this.videosService.findAllPublicVideos();
     }
 
-    // =======================================================
-  // === 1. RUTA ESPECÍFICA (DEBE IR PRIMERO) ===
-  // =======================================================
-    @Get('popular') // GET /api/v1/videos/popular
+    @Get('popular')
     async getPopularVideos(@Query('limit') limit: number = 20): Promise<Video[]> {
-        // Si la plataforma crece, esta ruta debería ser pública (no requiere token)
         return this.videosService.findPopularVideos(Number(limit));
     }
 
-    
-
-    @Get('categories') // GET /api/v1/videos/categories
+    @Get('categories') 
     async findAllCategories(@Query('limit') limit: number = 20): Promise<Category[]> {
       return this.videosService.findAllCategories(Number(limit));
     }
-    
-    // =======================================================
-  // === 2. RUTA DINÁMICA (DEBE IR DESPUÉS) ===
-  // =======================================================
-    @Get(':id') // GET /api/v1/videos/:id
+
+    @Get('category/:categoryId')
+    async getByCategory(
+      @Param('categoryId') categoryId: string
+    ): Promise<Video[]> {
+      return this.videosService.findByCategory(categoryId);
+    }
+
+    @Get('search')
+    async searchVideos(
+      @Query('q') q: string,
+    ): Promise<Video[]> {
+      return this.videosService.searchVideos(q);
+    }
+
+    @Get(':id') 
     async getOneVideo(@Param('id') id: string): Promise<Video> {
-        // Lógica para obtener un video por su ID
         return this.videosService.findOne(id);
     }
     
     @UseGuards(JwtAuthGuard)
-  @Post('upload')
-  @UseInterceptors(FileInterceptor('file', multerOptions))
-  async uploadVideo(
-    @UploadedFile() file: Express.Multer.File,
-    @Body() body: any, // no usar DTO directo porque multipart convierte todo a string
-    @Request() req
-  ): Promise<Video> {
-    if (!file) {
-      throw new BadRequestException('Debe adjuntar un archivo de video.');
-    }
-
-    // Extract categoryIds - puede venir como JSON string o como comma-separated
-    let categoryIds: string[] = [];
-    try {
-      if (body.categoryIds) {
-        if (typeof body.categoryIds === 'string') {
-          // Puede ser JSON '["id1","id2"]' o 'id1,id2'
-          try {
-            categoryIds = JSON.parse(body.categoryIds);
-            if (!Array.isArray(categoryIds)) categoryIds = [];
-          } catch (e) {
-            // fallback: comma-separated
-            categoryIds = body.categoryIds.split(',').map((s: string) => s.trim()).filter(Boolean);
-          }
-        } else if (Array.isArray(body.categoryIds)) {
-          categoryIds = body.categoryIds;
-        }
+    @Post('upload')
+    @UseInterceptors(FileInterceptor('file', multerOptions))
+    async uploadVideo(
+      @UploadedFile() file: Express.Multer.File,
+      @Body() body: any, // no usar DTO directo porque multipart convierte todo a string
+      @Request() req
+    ): Promise<Video> {
+      if (!file) {
+        throw new BadRequestException('Debe adjuntar un archivo de video.');
       }
-    } catch (e) {
-      categoryIds = [];
+
+      // Extract categoryIds - puede venir como JSON string o como comma-separated
+      let categoryIds: string[] = [];
+      try {
+        if (body.categoryIds) {
+          if (typeof body.categoryIds === 'string') {
+            // Puede ser JSON '["id1","id2"]' o 'id1,id2'
+            try {
+              categoryIds = JSON.parse(body.categoryIds);
+              if (!Array.isArray(categoryIds)) categoryIds = [];
+            } catch (e) {
+              categoryIds = body.categoryIds.split(',').map((s: string) => s.trim()).filter(Boolean);
+            }
+          } else if (Array.isArray(body.categoryIds)) {
+            categoryIds = body.categoryIds;
+          }
+        }
+      } catch (e) {
+        categoryIds = [];
+      }
+
+      if (categoryIds.length > 4) {
+        throw new BadRequestException('Puedes seleccionar un máximo de 4 categorías.');
+      }
+
+      const userId = req.user?.user_id || req.user?.id || req.user?.sub;
+
+      const createVideoDto = {
+        title: body.title,
+        songTitle: body.songTitle,
+        description: body.description,
+        categoryIds: categoryIds,
+      };
+
+      return this.videosService.uploadAndRegister(createVideoDto, file, userId, categoryIds);
     }
 
-    // Validación rápida del lado del controlador (redundante con el service)
-    if (categoryIds.length > 4) {
-      throw new BadRequestException('Puedes seleccionar un máximo de 4 categorías.');
-    }
 
-    const userId = req.user?.user_id || req.user?.id || req.user?.sub;
-
-    // Pasamos createVideoDto con campos desde body (title, songTitle, description)
-    const createVideoDto = {
-      title: body.title,
-      songTitle: body.songTitle,
-      description: body.description,
-      categoryIds: categoryIds,
-    };
-
-    return this.videosService.uploadAndRegister(createVideoDto, file, userId, categoryIds);
-  }
-
-
-    // =======================================================
-  // === ENDPOINT NUEVO: Votar por Video ===
-  // =======================================================
   @UseGuards(JwtAuthGuard)
-  @Post(':id/vote') // POST /api/v1/videos/:id/vote
+  @Post(':id/vote') 
   async voteForVideo(
     @Param('id') videoId: string,
     @Request() req,
   ): Promise<{ message: string; video: Video }> {
-    //const userId = req.user.user_id;
     const userId = req.user?.user_id || req.user?.id || req.user?.sub;
     
-    // Llamar al servicio para registrar el voto y actualizar el contador
     const updatedVideo = await this.videosService.registerVote(videoId, userId);
 
     return {
@@ -158,28 +153,22 @@ export class VideosController {
     };
   }
 
-  // =======================================================
-  // === ENDPOINT NUEVO: Obtener Comentarios ===
-  // =======================================================
-  @Get(':id/comments') // GET /api/v1/videos/:id/comments
+ 
+  @Get(':id/comments') 
   async getComments(@Param('id') videoId: string): Promise<Comment[]> {
     return this.videosService.findCommentsByVideoId(videoId);
   }
 
-  // =======================================================
-  // === ENDPOINT NUEVO: Crear Comentario (Protegido) ===
-  // =======================================================
+  
   @UseGuards(JwtAuthGuard)
-  @Post(':id/comments') // POST /api/v1/videos/:id/comments
+  @Post(':id/comments') 
   async postComment(
     @Param('id') videoId: string,
     @Request() req,
     @Body() createCommentDto: CreateCommentDto,
   ): Promise<Comment> {
-    //const userId = req.user.user_id;
     const userId = req.user?.user_id || req.user?.id || req.user?.sub;
     return this.videosService.createComment(videoId, userId, createCommentDto);
   }
-
 
 }

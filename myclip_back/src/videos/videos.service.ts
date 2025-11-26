@@ -72,34 +72,27 @@ export class VideosService {
         return newVideo;
     }
 
-    /**
-     * Busca todos los videos subidos por un usuario específico.
-     */
     async findUserVideos(userId: string): Promise<Video[]> {
         return this.videosRepository.find({
             where: { user_id: userId },
-            order: { createdAt: 'DESC' }, // Los más recientes primero
+            order: { createdAt: 'DESC' }, 
         });
     }
 
     async findAllPublicVideos(): Promise<Video[]> {
-    return this.videosRepository.find({
-        where: { status: VideoStatus.ACTIVE },
-        order: { createdAt: 'DESC' },
-    });
-}
+        return this.videosRepository.find({
+            where: { status: VideoStatus.ACTIVE },
+            order: { createdAt: 'DESC' },
+        });
+    }
 
-    /**
-     * Busca un video por su ID.
-     */
     async findOne(videoId: string): Promise<Video> {
         const video = await this.videosRepository.findOne({
             where: { video_id: videoId },
         });
 
         if (!video) {
-            // Manejar error si no se encuentra el video
-            throw new NotFoundException(`Video con ID ${videoId} no encontrado.`); 
+           throw new NotFoundException(`Video con ID ${videoId} no encontrado.`); 
         }
 
         return video;
@@ -134,8 +127,7 @@ export class VideosService {
     }
 
     async registerVote(videoId: string, userId: string): Promise<Video> {
-        // 1. Verificar si el voto ya existe (unicidad)
-        const existingVote = await this.votesRepository.findOne({
+         const existingVote = await this.votesRepository.findOne({
         where: { videoId, userId },
         });
 
@@ -143,52 +135,42 @@ export class VideosService {
         throw new ConflictException('Ya has votado por este video.');
         }
 
-        // 2. Verificar que el video exista y esté activo
         const video = await this.videosRepository.findOne({ where: { video_id: videoId } });
 
         if (!video) {
-        throw new NotFoundException(`Video con ID ${videoId} no encontrado.`);
+            throw new NotFoundException(`Video con ID ${videoId} no encontrado.`);
         }
         
-        // Opcional: Impedir votar videos que no estén ACTIVOS
         if (video.status !== VideoStatus.ACTIVE) {
             throw new ConflictException('Solo se puede votar videos activos.');
         }
 
-        // 3. Crear y guardar el voto
         const newVote = this.votesRepository.create({
         videoId: video.video_id,
         userId: userId,
         });
         await this.votesRepository.save(newVote);
 
-        // 4. Actualizar el contador de votos del video
         video.voteCount += 1;
         await this.videosRepository.save(video);
 
-        return video; // Devolvemos el video actualizado
+        return video;
     }
-    // =======================================================
+    
 
-    /**
-   * Obtiene todos los comentarios de un video, incluyendo los datos del usuario.
-   */
-  async findCommentsByVideoId(videoId: string): Promise<Comment[]> {
-    return this.commentsRepository.find({
-      where: { videoId },
-      relations: ['user'], // Une la tabla de comentarios con la tabla de usuarios
-      order: { createdAt: 'ASC' }, // Comentarios más antiguos primero
-    });
-  }
+    async findCommentsByVideoId(videoId: string): Promise<Comment[]> {
+        return this.commentsRepository.find({
+            where: { videoId },
+            relations: ['user'], 
+            order: { createdAt: 'ASC' }, 
+        });
+    }
 
-  /**
-   * Crea un nuevo comentario.
-   */
-  async createComment(videoId: string, userId: string, createCommentDto: CreateCommentDto): Promise<Comment> {
-    // Opcional: Verificar que el video exista (para robustez)
-    const videoExists = await this.videosRepository.count({ where: { video_id: videoId } });
-    if (videoExists === 0) {
-      throw new NotFoundException('El video no existe.');
+  
+    async createComment(videoId: string, userId: string, createCommentDto: CreateCommentDto): Promise<Comment> {
+        const videoExists = await this.videosRepository.count({ where: { video_id: videoId } });
+        if (videoExists === 0) {
+        throw new NotFoundException('El video no existe.');
     }
 
     const newComment = this.commentsRepository.create({
@@ -200,20 +182,49 @@ export class VideosService {
     return this.commentsRepository.save(newComment);
   }
 
-
   /**
- * Obtiene una lista de videos ordenados por el conteo de votos.
- */
-async findPopularVideos(limit: number = 20): Promise<Video[]> {
-    return this.videosRepository.find({
-        where: { status: VideoStatus.ACTIVE }, // Solo videos activos
-        order: { voteCount: 'DESC', createdAt: 'DESC' }, // Primero por votos, luego por más reciente
-        take: limit, // Limita el número de resultados (ej. Top 20)
-    });
-}
+     * Obtiene una lista de videos ordenados por el conteo de votos.
+     */
+    async findPopularVideos(limit: number = 20): Promise<Video[]> {
+        return this.videosRepository.find({
+            where: { status: VideoStatus.ACTIVE }, 
+            order: { voteCount: 'DESC', createdAt: 'DESC' }, 
+            take: limit, 
+        });
+    }
 
-async findAllCategories(limit: number = 20): Promise<Category[]> {
-    return this.categoriesRepository.find({ order: { name: 'ASC' }});
-}
+    async findAllCategories(limit: number = 20): Promise<Category[]> {
+        return this.categoriesRepository.find({ order: { name: 'ASC' }});
+    }
+
+
+    async searchVideos(q: string): Promise<Video[]> {
+        if (!q || q.trim().length === 0) return [];
+
+        return this.videosRepository
+            .createQueryBuilder('v')
+            .leftJoinAndSelect('v.categories', 'c')
+            .where('v.status = :status', { status: VideoStatus.ACTIVE })
+            .andWhere(`
+            LOWER(v.title) LIKE LOWER(:q)
+            OR LOWER(v.songTitle) LIKE LOWER(:q)
+            OR LOWER(c.name) LIKE LOWER(:q)
+            `)
+            .setParameter('q', `%${q}%`)
+            .orderBy('v.createdAt', 'DESC')
+            .limit(50)
+            .getMany();
+    }
+
+
+    async findByCategory(categoryId: string): Promise<Video[]> {
+        return this.videosRepository
+            .createQueryBuilder('v')
+            .leftJoin('v.categories', 'c')
+            .where('c.category_id = :categoryId', { categoryId })
+            .andWhere('v.status = :status', { status: VideoStatus.ACTIVE })
+            .orderBy('v.createdAt', 'DESC')
+            .getMany();
+    }
 
 }

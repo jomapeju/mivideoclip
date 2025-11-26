@@ -1,154 +1,154 @@
+// MYCLIP_FRONT/src/components/VideoDetailClient.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Video as VideoType, Comment as CommentType } from '../lib/video.types';
 import { VideoPlayer } from './VideoPlayer';
-import { registerVote, getCommentsByVideoId, createComment } from '../services/videos.service';
+import api from '../services/api.service';
 import { useRouter } from 'next/navigation';
-import { getClientUser } from '../lib/auth';
 
-type Props = { initialVideo: VideoType };
+export type Video = any;
+export type Comment = any;
 
-export default function VideoDetailClient({ initialVideo }: Props) {
+type Props = {
+  initialVideo: Video;
+  initialComments: Comment[];
+};
+
+export default function VideoDetailClient({ initialVideo, initialComments }: Props) {
   const router = useRouter();
-  const [video, setVideo] = useState<VideoType | null>(initialVideo);
-  const [loading, setLoading] = useState(false);
-
-  const [user, setUser] = useState<any | null>(null);
-  const [comments, setComments] = useState<CommentType[]>([]);
+  const [video, setVideo] = useState<Video | null>(initialVideo ?? null);
+  const [comments, setComments] = useState<Comment[]>(initialComments ?? []);
   const [newComment, setNewComment] = useState('');
-  const [isPosting, setIsPosting] = useState(false);
-  const [isVoted, setIsVoted] = useState(false);
-
-  const isAuthenticated = !!user;
+  const [posting, setPosting] = useState(false);
+  const [voting, setVoting] = useState(false);
+  const [hasVoted, setHasVoted] = useState(false);
 
   useEffect(() => {
-    // 1) Cargar sesión real desde el backend
-    getClientUser().then(setUser);
+    setVideo(initialVideo);
+    setComments(initialComments ?? []);
+  }, [initialVideo, initialComments]);
 
-    // 2) Cargar comentarios
-    loadComments();
-  }, []);
-
-  async function loadComments() {
-    if (!video) return;
+  const handleVote = async () => {
+    if (!video || voting) return;
+    setVoting(true);
     try {
-      const data = await getCommentsByVideoId(video.video_id);
-      setComments(data);
-    } catch (err) {
-      console.error('Error cargando comentarios', err);
-    }
-  }
-
-  async function handleVote() {
-    if (!video || isVoted) return;
-
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-
-    try {
-      const updated = await registerVote(video.video_id);
+      const res = await api.post(`/videos/${video.video_id}/vote`, {}, { withCredentials: true });
+      // servidor devuelve { message, video }
+      const updated = res.data?.video ?? res.data;
       setVideo(updated);
-      setIsVoted(true);
+      setHasVoted(true);
     } catch (err: any) {
       if (err.response?.status === 401) {
         router.push('/login');
         return;
       }
-      alert(err.message || 'Error al votar');
-    }
-  }
-
-  async function handlePostComment(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (!newComment.trim()) return;
-
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-
-    setIsPosting(true);
-    try {
-      await createComment(video!.video_id, newComment.trim());
-      setNewComment('');
-      await loadComments();
-    } catch (err) {
-      alert('No se pudo publicar el comentario.');
+      alert(err.response?.data?.message || 'Error al votar');
     } finally {
-      setIsPosting(false);
+      setVoting(false);
     }
-  }
+  };
 
-  if (!video) return <div className="p-10 text-center">Video no encontrado</div>;
+  const loadComments = async () => {
+    if (!video) return;
+    try {
+      const res = await api.get<Comment[]>(`/videos/${video.video_id}/comments`);
+      setComments(res.data);
+    } catch (e) {
+      console.error('Error cargando comentarios', e);
+    }
+  };
+
+  const handlePostComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+    setPosting(true);
+    try {
+      const res = await api.post(`/videos/${video!.video_id}/comments`, { content: newComment.trim() }, { withCredentials: true });
+      // backend devuelve comentario guardado
+      await loadComments();
+      setNewComment('');
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        router.push('/login');
+        return;
+      }
+      alert(err.response?.data?.message || 'Error al publicar comentario');
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  if (!video) return <div>Cargando video...</div>;
 
   const playerOptions = {
     sources: [{ src: video.streamUrlHls || '', type: 'application/x-mpegURL' }],
   };
 
   return (
-    <>
+    <article>
       <h1 className="text-3xl font-bold mb-4">{video.title}</h1>
 
-      <div className="bg-black rounded-xl shadow-2xl mb-6">
+      <div className="bg-black rounded-lg overflow-hidden mb-4">
         <VideoPlayer options={playerOptions} />
       </div>
 
-      <div className="mt-6 p-4 bg-white rounded-lg shadow flex justify-between items-center">
-        <h2 className="text-2xl font-semibold text-gray-800">Votos: {video.voteCount}</h2>
-        <button
-          onClick={handleVote}
-          disabled={isVoted}
-          className={`px-6 py-2 rounded-lg text-white font-semibold ${
-            isVoted ? 'bg-gray-400' : 'bg-green-500'
-          }`}
-        >
-          {isVoted ? '👍 Votado' : '⭐ Votar'}
-        </button>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <p className="text-sm text-gray-600">Subido: {new Date(video.createdAt).toLocaleString()}</p>
+          <p className="text-sm text-gray-600">Vistas: {video.viewsCount ?? 0}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleVote}
+            disabled={voting || hasVoted}
+            className={`px-4 py-2 rounded ${hasVoted ? 'bg-gray-400' : 'bg-green-600 text-white'}`}
+          >
+            {voting ? 'Votando...' : hasVoted ? 'Votado' : 'Votar'}
+          </button>
+          <span className="text-sm text-gray-700">Votos: {video.voteCount ?? 0}</span>
+        </div>
       </div>
 
-      <div className="mt-6 p-4 bg-white rounded-lg shadow">
-        <h2 className="text-xl font-semibold">Descripción:</h2>
+      {/* Descripción */}
+      <section className="mb-8 bg-white p-4 rounded shadow">
+        <h2 className="font-semibold mb-2">Descripción</h2>
         <p className="text-gray-700">{video.description}</p>
-      </div>
+      </section>
 
-      <div className="mt-8 p-6 bg-white rounded-lg shadow">
-        <h2 className="text-2xl font-bold mb-4">Comentarios ({comments.length})</h2>
+      {/* Comentarios */}
+      <section className="bg-white p-4 rounded shadow">
+        <h2 className="text-xl font-semibold mb-4">Comentarios ({comments.length})</h2>
 
-        {isAuthenticated ? (
-          <form onSubmit={handlePostComment} className="mb-4">
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              rows={3}
-              className="w-full p-3 border rounded mb-2"
-            />
-            <button type="submit" disabled={isPosting} className="bg-blue-600 text-white px-4 py-2 rounded">
-              {isPosting ? 'Publicando...' : 'Publicar Comentario'}
+        <form onSubmit={handlePostComment} className="mb-4">
+          <textarea
+            className="w-full border rounded p-2 mb-2"
+            rows={3}
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Escribe tu comentario..."
+          />
+          <div className="flex gap-2">
+            <button type="submit" disabled={posting} className="px-4 py-2 bg-blue-600 text-white rounded">
+              {posting ? 'Publicando...' : 'Publicar'}
             </button>
-          </form>
-        ) : (
-          <p className="text-gray-500 mb-4">
-            Debes <a href="/login" className="text-blue-600 underline">iniciar sesión</a> para comentar.
-          </p>
-        )}
+            <button type="button" onClick={() => setNewComment('')} className="px-3 py-2 rounded border">
+              Limpiar
+            </button>
+          </div>
+        </form>
 
         <div className="space-y-4">
           {comments.map((c) => (
-            <div key={c.comment_id} className="border-t pt-4">
+            <div key={c.comment_id} className="border-t pt-3">
               <p className="text-gray-800">{c.content}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                Por <strong>{c.user?.username || 'Usuario'}</strong> ·{' '}
-                {new Date(c.createdAt).toLocaleString()}
+              <p className="text-xs text-gray-500">
+                {c.user?.username ?? 'Usuario'} · {new Date(c.createdAt).toLocaleString()}
               </p>
             </div>
           ))}
-          {comments.length === 0 && <p className="text-gray-500">Sé el primero en comentar este video.</p>}
+          {comments.length === 0 && <p className="text-gray-500">Sé el primero en comentar.</p>}
         </div>
-      </div>
-    </>
+      </section>
+    </article>
   );
 }

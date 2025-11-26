@@ -1,39 +1,66 @@
-// src/app/videos/[id]/page.tsx
-import React from 'react';
-import VideoDetailClient from '../../../../components/VideoDetailClient'; // nuevo cliente interactivo
-import Link from 'next/link';
+// MYCLIP_FRONT/src/app/(app)/videos/[id]/page.tsx
+import React from "react";
+import VideoDetailClient from "../../../../components/VideoDetailClient";
+import VideoGrid from "../../../../components/VideoGrid";
+import { cookies } from "next/headers";
 
-// Server Component (NO "use client")
-type Params = { params: { id: string } };
+type Video = any;
+type Comment = any;
 
-export default async function VideoDetailPage({ params }: Params) {
-  const id = params.id;
+interface PageProps {
+  params: { id: string };
+}
 
+export default async function VideoPage({ params }: PageProps) {
+  const { id } = params;
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
-  // SSR fetch (ejecuta en servidor). No incluimos cookies: vista pública.
-  const res = await fetch(`${apiBase}/videos/${id}`, {
-    method: 'GET',
-    // no-cache para siempre traer la info actual
-    cache: 'no-store',
+  if (!apiBase) throw new Error("NEXT_PUBLIC_API_URL no definida");
+
+  // Forward cookies from incoming request -> backend so protected endpoints can use them if needed
+  const cookieStore = cookies();
+  const cookieString = cookieStore.getAll().map(c => `${c.name}=${c.value}`).join("; ");
+
+  // 1) Video (cache corto)
+  const videoRes = await fetch(`${apiBase}/videos/${id}`, {
+    headers: { Cookie: cookieString },
+    // Rerender cada 30s para mantener relativamente frescos los metadatos
+    next: { revalidate: 30 },
   });
-
-  if (!res.ok) {
-    return (
-      <div className="p-10 text-center text-red-600">
-        Error cargando el video (status: {res.status})
-      </div>
-    );
+  if (!videoRes.ok) {
+    // mostrar 404 o fallback sencillo
+    return <div className="p-8">Video no encontrado (status {videoRes.status})</div>;
   }
+  const videoData: { video: Video } | Video = await videoRes.json();
+  // backend puede devolver directamente el objeto video o { video } — adaptalo según tu API
+  const video = (videoData as any).video ?? (videoData as any);
 
-  const video = await res.json(); // backend devuelve el objeto Video
-  // Si tu backend devuelve { video: ... } adáptalo: const video = await res.json().video;
+  // 2) Comments (no-store para ver el estado real)
+  const commentsRes = await fetch(`${apiBase}/videos/${id}/comments`, {
+    headers: { Cookie: cookieString },
+    cache: "no-store",
+  });
+  const comments = commentsRes.ok ? await commentsRes.json() : [];
+
+  // 3) Recomendados (ej: populares o similares)
+  const recommendedRes = await fetch(`${apiBase}/videos/popular?limit=6`, {
+    headers: { Cookie: cookieString },
+    next: { revalidate: 60 }, // revalida cada 60s
+  });
+  const recommended = recommendedRes.ok ? await recommendedRes.json() : [];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-5xl mx-auto">
-        <Link href="/" className="text-blue-600 underline mb-4 inline-block">← Volver</Link>
-        {/* Pasamos los datos al cliente interactivo */}
-        <VideoDetailClient initialVideo={video} />
+    <div className="max-w-6xl mx-auto p-6 space-y-8">
+      {/* Server-rendered initial UI */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <main className="lg:col-span-2 space-y-6">
+          {/* Video player + client interactivity */}
+          <VideoDetailClient initialVideo={video} initialComments={comments} />
+        </main>
+
+        <aside className="lg:col-span-1">
+          <h3 className="text-xl font-semibold mb-4">Recomendados</h3>
+          <VideoGrid videos={recommended} />
+        </aside>
       </div>
     </div>
   );

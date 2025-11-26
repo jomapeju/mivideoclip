@@ -32,3 +32,11 @@ export interface Comment {
     createdAt: string;
     user: UserBasic; // El backend nos devuelve el objeto user
 }
+
+export interface Category {
+    category_id: string;
+    name: string;
+    icon_url?: string | null;
+    createdAt: string;   // Los timestamps normalmente llegan como string ISO
+    updatedAt: string;
+}
