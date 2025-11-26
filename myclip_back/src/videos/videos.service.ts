@@ -1,11 +1,12 @@
 /* eslint-disable */
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In} from 'typeorm';
 import * as path from 'path'; // Para manejar rutas de archivos
 import { Video, VideoStatus } from './entities/video.entity';
 import { CreateVideoDto } from './dto/create-video.dto';
 import { Vote } from './entities/vote.entity';
+import { Category } from './entities/category.entity';
 import { Comment } from './entities/comment.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
 
@@ -18,6 +19,8 @@ export class VideosService {
         private votesRepository: Repository<Vote>,
         @InjectRepository(Comment)
         private commentsRepository: Repository<Comment>,
+        @InjectRepository(Category)
+        private categoriesRepository: Repository<Category>,
     ) {}
 
     /**
@@ -26,29 +29,46 @@ export class VideosService {
      * @param file El objeto del archivo subido por Multer.
      * @param userId ID del usuario obtenido del JWT.
      */
-    async uploadAndRegister(createVideoDto: CreateVideoDto, file: Express.Multer.File, userId: string): Promise<Video> {
-        // TODO: En la fase MVP (Costo Cero):
-        // 1. El archivo ya ha sido guardado temporalmente por Multer en la carpeta 'uploads'.
-        // 2. Aquí SIMULARÍAMOS la subida a S3 o GCS. Como estamos en Costo Cero,
-        //    simplemente usamos la ruta local del archivo.
+    async uploadAndRegister(createVideoDto: CreateVideoDto, file: Express.Multer.File, userId: string, categoryIds?: string[]): Promise<Video> {
+        if (categoryIds && categoryIds.length > 4) {
+        throw new BadRequestException('Un video solo puede tener hasta 4 categorías.');
+        }
 
-        // Simulación: Asignar la ruta temporal como la ruta RAW de almacenamiento
-        const rawStoragePath = path.join('uploads', file.filename); 
+        // Si se proporcionan categories -> comprobar existencia
+        let categories: Category[] = [];
+        if (categoryIds && categoryIds.length > 0) {
+        // eliminamos duplicados y vacíos
+        const cleanIds = Array.from(new Set(categoryIds.filter(Boolean)));
+        if (cleanIds.length > 4) throw new BadRequestException('Un video solo puede tener hasta 4 categorías.');
 
-        const newVideo = this.videosRepository.create({
-            ...createVideoDto,
-            user_id: userId,
-            rawStoragePath: rawStoragePath,
-            status: VideoStatus.PENDING, // Inicialmente PENDING (esperando transcodificación)
+        categories = await this.categoriesRepository.find({
+            where: { category_id: In(cleanIds) },
         });
 
-        // Guardar metadata en la base de datos
+        if (categories.length !== cleanIds.length) {
+            throw new BadRequestException('Alguna categoría seleccionada no existe.');
+        }
+        }
+
+        const rawStoragePath = path.join('uploads', file.filename);
+
+        const newVideo = this.videosRepository.create({
+        ...createVideoDto,
+        user_id: userId,
+        rawStoragePath,
+        status: VideoStatus.PENDING,
+        });
+
+        // Asignar categories (si las hay)
+        if (categories.length > 0) {
+        newVideo.categories = categories;
+        }
+
         await this.videosRepository.save(newVideo);
-        
-        // Ejecutar el Job de transcodificación SIN AWAIT.
-        // La API devuelve 201 inmediatamente, y el procesamiento ocurre en segundo plano.
-        this.simulateFFmpegJob(newVideo.video_id); 
-        
+
+        // Simular el job de transcodificación
+        this.simulateFFmpegJob(newVideo.video_id);
+
         return newVideo;
     }
 
@@ -191,4 +211,9 @@ async findPopularVideos(limit: number = 20): Promise<Video[]> {
         take: limit, // Limita el número de resultados (ej. Top 20)
     });
 }
+
+async findAllCategories(limit: number = 20): Promise<Category[]> {
+    return this.categoriesRepository.find({ order: { name: 'ASC' }});
+}
+
 }

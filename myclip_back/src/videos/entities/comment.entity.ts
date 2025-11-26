@@ -1,12 +1,8 @@
-// backend/src/videos/entities/comment.entity.ts
-
+/* eslint-disable */
 import { 
-    Entity, 
-    PrimaryGeneratedColumn, 
-    Column, 
-    ManyToOne, 
-    JoinColumn, 
-    CreateDateColumn 
+    Entity, PrimaryGeneratedColumn, Column,
+    ManyToOne, JoinColumn, CreateDateColumn,
+    UpdateDateColumn
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity/user.entity';
 import { Video } from './video.entity';
@@ -25,15 +21,17 @@ export class Comment {
     @Column({ type: 'text' })
     content: string;
 
-    @CreateDateColumn({ name: 'created_at' })
+    @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
     createdAt: Date;
 
-    // Relaciones (Opcional, pero útil para joins)
-    @ManyToOne(() => User)
+    @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+    updatedAt: Date;
+
+    @ManyToOne(() => User, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'user_id' })
     user: User;
     
-    @ManyToOne(() => Video, video => video.video_id)
+    @ManyToOne(() => Video, video => video.comments, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'video_id' })
     video: Video;
 }

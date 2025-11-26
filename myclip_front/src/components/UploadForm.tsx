@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import api from '../services/api.service';
 import { useRouter } from 'next/navigation';
 import { AxiosError } from 'axios';
+import { useEffect } from 'react';
 
 interface VideoResponse {
   video_id: string;
@@ -22,6 +23,10 @@ export const UploadForm = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<VideoResponse | null>(null);
+
+  const [categories, setCategories] = useState<{ category_id: string; name: string }[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const MAX_CATEGORIES = 4;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -53,6 +58,7 @@ export const UploadForm = () => {
       formData.append('title', title);
       formData.append('songTitle', songTitle);
       formData.append('description', description);
+      formData.append('categoryIds', JSON.stringify(selectedCategories));
 
       // Log entries de FormData para debug
       console.log('=== FormData ===');
@@ -85,6 +91,30 @@ export const UploadForm = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    // Obtener categorías
+    const load = async () => {
+      try {
+        const res = await api.get('/videos/categories'); // o /categories según tu API
+        setCategories(res.data);
+      } catch (e) {
+        console.error('No se pudieron cargar categorías', e);
+      }
+    };
+    load();
+  }, []);
+
+  const toggleCategory = (id: string) => {
+    setSelectedCategories(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      if (prev.length >= MAX_CATEGORIES) {
+        alert(`Máximo ${MAX_CATEGORIES} categorías.`);
+        return prev;
+      }
+      return [...prev, id];
+    });
   };
 
   return (
@@ -137,6 +167,21 @@ export const UploadForm = () => {
             required
           />
         </div>
+
+        {categories.length > 0 && (
+          <div className="grid grid-cols-2 gap-2">
+            {categories.map(cat => (
+              <label key={cat.category_id} className="inline-flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={selectedCategories.includes(cat.category_id)}
+                  onChange={() => toggleCategory(cat.category_id)}
+                />
+                <span>{cat.name}</span>
+              </label>
+            ))}
+          </div>
+        )}
 
         <button
           type="submit"

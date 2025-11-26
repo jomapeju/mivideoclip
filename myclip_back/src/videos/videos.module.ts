@@ -7,10 +7,27 @@ import { AuthModule } from '../auth/auth.module'; // Necesario para el guardián
 import { User } from '../users/entities/user.entity/user.entity';
 import { Vote } from './entities/vote.entity';
 import { Comment } from './entities/comment.entity';
+import { Category } from './entities/category.entity';
+import { Contest } from './entities/contest.entity';
+import { ContestVideo } from './entities/contest-video.entity';
+import { ContestVote } from './entities/contest-vote.entity';
+import { VideoMetrics } from './entities/video-metrics.entity';
+import { CategoryVideoStats } from './entities/category-video-stats.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Video, User, Vote, Comment]), // Registrar la entidad
+    TypeOrmModule.forFeature([
+      Video, 
+      User,
+      Vote, 
+      Comment,
+      Category,
+      Contest,
+      ContestVideo,
+      ContestVote,
+      VideoMetrics,
+      CategoryVideoStats,
+    ]),
     AuthModule, // Importar AuthModule para usar JwtAuthGuard
   ],
   controllers: [VideosController],

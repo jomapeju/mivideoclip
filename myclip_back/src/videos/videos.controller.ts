@@ -23,6 +23,7 @@ import * as path from 'path'; // Para manejar rutas de archivos
 import { Video } from './entities/video.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { Comment } from './entities/comment.entity';
+import { Category } from './entities/category.entity';
 
 // TODO: Configuración de Multer para guardar el archivo en la carpeta 'uploads'
 const multerOptions = {
@@ -67,6 +68,13 @@ export class VideosController {
         // Si la plataforma crece, esta ruta debería ser pública (no requiere token)
         return this.videosService.findPopularVideos(Number(limit));
     }
+
+    
+
+    @Get('categories') // GET /api/v1/videos/categories
+    async findAllCategories(@Query('limit') limit: number = 20): Promise<Category[]> {
+      return this.videosService.findAllCategories(Number(limit));
+    }
     
     // =======================================================
   // === 2. RUTA DINÁMICA (DEBE IR DESPUÉS) ===
@@ -78,19 +86,55 @@ export class VideosController {
     }
     
     @UseGuards(JwtAuthGuard)
-    @Post('upload')
-    @UseInterceptors(FileInterceptor('file', multerOptions))
-    async uploadVideo(
-        @UploadedFile() file: Express.Multer.File,
-        @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false })) createVideoDto: CreateVideoDto,
-        @Request() req
-    ): Promise<Video> {
-        if (!file) {
-            throw new BadRequestException('Debe adjuntar un archivo de video.');
-        }
-        const userId = req.user?.user_id || req.user?.id || req.user?.sub;
-        return this.videosService.uploadAndRegister(createVideoDto, file, userId);
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file', multerOptions))
+  async uploadVideo(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: any, // no usar DTO directo porque multipart convierte todo a string
+    @Request() req
+  ): Promise<Video> {
+    if (!file) {
+      throw new BadRequestException('Debe adjuntar un archivo de video.');
     }
+
+    // Extract categoryIds - puede venir como JSON string o como comma-separated
+    let categoryIds: string[] = [];
+    try {
+      if (body.categoryIds) {
+        if (typeof body.categoryIds === 'string') {
+          // Puede ser JSON '["id1","id2"]' o 'id1,id2'
+          try {
+            categoryIds = JSON.parse(body.categoryIds);
+            if (!Array.isArray(categoryIds)) categoryIds = [];
+          } catch (e) {
+            // fallback: comma-separated
+            categoryIds = body.categoryIds.split(',').map((s: string) => s.trim()).filter(Boolean);
+          }
+        } else if (Array.isArray(body.categoryIds)) {
+          categoryIds = body.categoryIds;
+        }
+      }
+    } catch (e) {
+      categoryIds = [];
+    }
+
+    // Validación rápida del lado del controlador (redundante con el service)
+    if (categoryIds.length > 4) {
+      throw new BadRequestException('Puedes seleccionar un máximo de 4 categorías.');
+    }
+
+    const userId = req.user?.user_id || req.user?.id || req.user?.sub;
+
+    // Pasamos createVideoDto con campos desde body (title, songTitle, description)
+    const createVideoDto = {
+      title: body.title,
+      songTitle: body.songTitle,
+      description: body.description,
+      categoryIds: categoryIds,
+    };
+
+    return this.videosService.uploadAndRegister(createVideoDto, file, userId, categoryIds);
+  }
 
 
     // =======================================================
@@ -136,5 +180,6 @@ export class VideosController {
     const userId = req.user?.user_id || req.user?.id || req.user?.sub;
     return this.videosService.createComment(videoId, userId, createCommentDto);
   }
+
 
 }

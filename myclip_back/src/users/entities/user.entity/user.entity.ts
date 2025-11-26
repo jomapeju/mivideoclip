@@ -5,6 +5,7 @@ import {
   //OneToOne,
   //JoinColumn,
   CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('users') // Mapea a la tabla 'Users' de PostgreSQL
@@ -30,5 +31,7 @@ export class User {
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
-  // Opcional: Aquí podrías añadir la relación OneToOne con UserProfile
+
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  updatedAt: Date;
 }

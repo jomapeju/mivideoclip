@@ -1,6 +1,5 @@
-// backend/src/videos/entities/vote.entity.ts
-
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index, CreateDateColumn } from 'typeorm';
+/* eslint-disable */
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { User } from '../../users/entities/user.entity/user.entity';
 import { Video } from './video.entity';
 
@@ -23,6 +22,9 @@ export class Vote {
     @ManyToOne(() => Video, (video) => video.video_id)
     video: Video;
 
-    @CreateDateColumn({ name: 'created_at' })
+    @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
     createdAt: Date;
+
+    @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+    updatedAt: Date;
 }
