@@ -5,6 +5,7 @@ import api from '../services/api.service';
 import { useRouter } from 'next/navigation';
 import { AxiosError } from 'axios';
 import { useEffect } from 'react';
+import { getCategoriesCached } from "../services/cache/category.service";
 
 interface VideoResponse {
   video_id: string;
@@ -94,16 +95,11 @@ export const UploadForm = () => {
   };
 
   useEffect(() => {
-    // Obtener categorías
-    const load = async () => {
-      try {
-        const res = await api.get('/videos/categories'); // o /categories según tu API
-        setCategories(res.data);
-      } catch (e) {
-        console.error('No se pudieron cargar categorías', e);
-      }
-    };
-    load();
+    async function loadCategories() {
+        const data = await getCategoriesCached();
+        setCategories(data);
+    }
+    loadCategories();
   }, []);
 
   const toggleCategory = (id: string) => {
