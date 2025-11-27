@@ -1,0 +1,48 @@
+/* MyClip video player theme */
+
+.video-js.vjs-theme-myclip {
+  font-family: inherit;
+  color: #fff;
+}
+
+/* Botón Play grande */
+.vjs-theme-myclip .vjs-big-play-button {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  width: 80px;
+  height: 80px;
+  border: none;
+  background-color: rgba(0, 0, 0, 0.35);
+  transition: background-color 0.2s ease;
+}
+
+.vjs-theme-myclip .vjs-big-play-button:hover {
+  background-color: rgba(0, 0, 0, 0.55);
+}
+
+/* Barra de control */
+.vjs-theme-myclip .vjs-control-bar {
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 14px;
+}
+
+/* Time, progress, etc */
+.vjs-theme-myclip .vjs-progress-holder,
+.vjs-theme-myclip .vjs-slider {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.vjs-theme-myclip .vjs-play-progress {
+  background-color: #38bdf8; /* cyan-400 */
+}
+
+.vjs-theme-myclip .vjs-load-progress div {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Botones de control */
+.vjs-theme-myclip .vjs-control {
+  color: white;
+}

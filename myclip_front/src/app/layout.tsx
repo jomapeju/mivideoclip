@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "./globals.css"; // Asegúrate de tener este archivo o crea uno vacío.
+import "./globals.css"; 
 
 export const metadata: Metadata = {
   title: "MyVideoClip",
@@ -13,7 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body className="app-shell">{children}</body>
     </html>
   );
 }

@@ -1,24 +1,46 @@
-// MYCLIP_FRONT/src/components/VideoGrid.tsx
-import React from 'react';
-import Link from 'next/link';
+"use client";
+
+import React from "react";
+import Link from "next/link";
 
 export default function VideoGrid({ videos = [] }: { videos: any[] }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
       {videos.map((v: any) => (
-        <Link key={v.video_id} href={`/videos/${v.video_id}`} className="block bg-white rounded shadow overflow-hidden">
-          <div className="h-44 bg-gray-200 flex items-center justify-center">
-            {/* thumbnail real si existe */}
-            {v.thumbnailUrl ? <img src={v.thumbnailUrl} alt={v.title} /> : <div className="text-sm text-gray-600">Sin miniatura</div>}
+        <Link
+          key={v.video_id}
+          href={`/videos/${v.video_id}`}
+          className="group rounded-xl overflow-hidden bg-white shadow-sm border hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
+        >
+          {/* --------- Thumbnail --------- */}
+          <div className="relative aspect-video bg-gray-200">
+            {v.thumbnailUrl ? (
+              <img
+                src={v.thumbnailUrl}
+                alt={v.title}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-gray-600 text-sm">
+                Sin miniatura
+              </div>
+            )}
           </div>
-          <div className="p-3">
-            <h3 className="font-semibold">{v.title}</h3>
+
+          {/* --------- Info --------- */}
+          <div className="p-3 space-y-1.5">
+            <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 group-hover:text-indigo-600 transition">
+              {v.title}
+            </h3>
+
             <p className="text-xs text-gray-500">{v.songTitle}</p>
-            <p className="text-sm text-gray-700 mt-1">{v.voteCount ?? 0} ⭐</p>
+
+            <div className="flex items-center gap-1 text-sm text-gray-700 font-medium">
+              ⭐ {v.voteCount ?? 0}
+            </div>
           </div>
         </Link>
       ))}
     </div>
   );
 }
-

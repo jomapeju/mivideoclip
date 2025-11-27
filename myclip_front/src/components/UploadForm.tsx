@@ -1,110 +1,115 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import api from '../services/api.service';
-import { useRouter } from 'next/navigation';
-import { AxiosError } from 'axios';
-import { useEffect } from 'react';
+import React, { useState, useEffect } from "react";
+import api from "../services/api.service";
+import { useRouter } from "next/navigation";
+import { AxiosError } from "axios";
 import { getCategoriesCached } from "../services/cache/category.service";
+import {
+  FilmIcon,
+  TagIcon,
+  Bars3BottomLeftIcon,
+  MusicalNoteIcon,
+} from "@heroicons/react/24/outline";
 
 interface VideoResponse {
   video_id: string;
   title: string;
-  status: 'PENDING' | 'ACTIVE';
+  status: "PENDING" | "ACTIVE";
 }
 
 export const UploadForm = () => {
   const router = useRouter();
 
-  const [title, setTitle] = useState('');
-  const [songTitle, setSongTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState("");
+  const [songTitle, setSongTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<VideoResponse | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
 
-  const [categories, setCategories] = useState<{ category_id: string; name: string }[]>([]);
+  const [categories, setCategories] = useState<
+    { category_id: string; name: string }[]
+  >([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const MAX_CATEGORIES = 4;
 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // ================================
+  //   FILE PREVIEW
+  // ================================
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      console.log('Archivo seleccionado:', file);
-      setVideoFile(file);
-    } else {
-      console.log('No se seleccionó ningún archivo');
+    const f = e.target.files?.[0];
+    if (!f) {
       setVideoFile(null);
+      setPreview(null);
+      return;
     }
+
+    setVideoFile(f);
+    setPreview(URL.createObjectURL(f));
   };
 
+  // ================================
+  //   LOAD CATEGORIES
+  // ================================
+  useEffect(() => {
+    async function load() {
+      const data = await getCategoriesCached();
+      setCategories(data);
+    }
+    load();
+  }, []);
+
+  // ================================
+  //   SUBMIT
+  // ================================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
 
     if (!title || !songTitle || !videoFile) {
-      setError('Por favor, complete todos los campos y seleccione un archivo.');
+      setError("Por favor, complete todos los campos y seleccione un archivo.");
       return;
     }
 
     setLoading(true);
 
     try {
-      // Crear FormData
       const formData = new FormData();
-      formData.append('file', videoFile); // nombre debe coincidir con Multer
-      formData.append('title', title);
-      formData.append('songTitle', songTitle);
-      formData.append('description', description);
-      formData.append('categoryIds', JSON.stringify(selectedCategories));
+      formData.append("file", videoFile);
+      formData.append("title", title);
+      formData.append("songTitle", songTitle);
+      formData.append("description", description);
+      formData.append("categoryIds", JSON.stringify(selectedCategories));
 
-      // Log entries de FormData para debug
-      console.log('=== FormData ===');
-      for (const pair of formData.entries()) {
-        console.log(pair[0], pair[1]);
-      }
-
-      const response = await api.post<VideoResponse>('/videos/upload', formData, {
-        // NO setear Content-Type, Axios lo hace automáticamente
-        onUploadProgress: (progressEvent) => {
-          const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
-          console.log(`Progreso de subida: ${percent}%`);
+      const res = await api.post<VideoResponse>("/videos/upload", formData, {
+        onUploadProgress: (e) => {
+          const percent = Math.round((e.loaded * 100) / (e.total || 1));
+          console.log("Progress:", percent);
         },
       });
 
-      console.log('Respuesta del backend:', response.data);
-      setSuccess(response.data);
-      alert('Video subido y registrado correctamente.');
-      router.push('/dashboard');
-
+      router.push("/dashboard");
     } catch (err) {
-      const axiosError = err as AxiosError<{ message: string }>;
-      if (axiosError.response?.status === 401) {
-        router.push('/login');
-        return;
-      }
-      const msg = axiosError.response?.data?.message || 'Error desconocido al subir el video.';
-      console.error('Error al subir:', msg);
-      setError(`Error: ${msg}`);
+      const axiosErr = err as AxiosError<{ message: string }>;
+      const msg =
+        axiosErr.response?.data?.message ||
+        "Error desconocido al subir el video.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    async function loadCategories() {
-        const data = await getCategoriesCached();
-        setCategories(data);
-    }
-    loadCategories();
-  }, []);
-
+  // ================================
+  //   CATEGORY SELECTOR
+  // ================================
   const toggleCategory = (id: string) => {
-    setSelectedCategories(prev => {
-      if (prev.includes(id)) return prev.filter(x => x !== id);
+    setSelectedCategories((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
       if (prev.length >= MAX_CATEGORIES) {
         alert(`Máximo ${MAX_CATEGORIES} categorías.`);
         return prev;
@@ -113,80 +118,122 @@ export const UploadForm = () => {
     });
   };
 
+  // ================================
+  //   UI
+  // ================================
   return (
-    <form onSubmit={handleSubmit} className="p-8 bg-white shadow-xl rounded-lg max-w-lg mx-auto mt-10">
-      <h2 className="text-3xl font-bold mb-6 text-gray-800">Subir Nuevo Videoclip</h2>
+    <form onSubmit={handleSubmit} className="space-y-6">
 
-      {error && <p className="p-3 mb-4 bg-red-100 text-red-700 border border-red-300 rounded">{error}</p>}
-      {loading && <p className="p-3 mb-4 bg-blue-100 text-blue-700 rounded">Subiendo... Por favor espere.</p>}
+      {/* ERROR MESSAGE */}
+      {error && (
+        <p className="p-3 bg-red-50 border border-red-300 rounded text-red-700 text-sm">
+          {error}
+        </p>
+      )}
 
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Título del Video</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-            required
-          />
+      {/* VIDEO PREVIEW */}
+      {preview && (
+        <div className="rounded-lg overflow-hidden shadow border mb-4">
+          <video src={preview} controls className="w-full max-h-80" />
         </div>
+      )}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Título de la Canción</label>
-          <input
-            type="text"
-            value={songTitle}
-            onChange={(e) => setSongTitle(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            className="w-full p-3 border border-gray-300 rounded-lg"
-          />
-        </div>
-
-        <div className="pt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Archivo de Video (.mp4, .mov)</label>
-          <input
-            type="file"
-            onChange={handleFileChange}
-            accept="video/*"
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-            required
-          />
-        </div>
-
-        {categories.length > 0 && (
-          <div className="grid grid-cols-2 gap-2">
-            {categories.map(cat => (
-              <label key={cat.category_id} className="inline-flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={selectedCategories.includes(cat.category_id)}
-                  onChange={() => toggleCategory(cat.category_id)}
-                />
-                <span>{cat.name}</span>
-              </label>
-            ))}
-          </div>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full mt-6 bg-green-600 text-white p-3 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 transition duration-150"
-        >
-          {loading ? 'Procesando Subida...' : 'Subir Videoclip'}
-        </button>
+      {/* TITLE */}
+      <div>
+        <label className="flex items-center text-sm font-medium text-gray-700 mb-1 gap-1">
+          <FilmIcon className="h-4 w-4" />
+          Título del Video
+        </label>
+        <input
+          type="text"
+          className="w-full border border-gray-300 rounded-lg p-3 focus:ring-blue-500 focus:border-blue-500"
+          required
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
       </div>
+
+      {/* SONG TITLE */}
+      <div>
+        <label className="flex items-center text-sm font-medium text-gray-700 mb-1 gap-1">
+          <MusicalNoteIcon className="h-4 w-4" />
+          Título de la Canción
+        </label>
+        <input
+          type="text"
+          className="w-full border p-3 rounded-lg"
+          required
+          value={songTitle}
+          onChange={(e) => setSongTitle(e.target.value)}
+        />
+      </div>
+
+      {/* DESCRIPTION */}
+      <div>
+        <label className="flex items-center text-sm font-medium text-gray-700 mb-1 gap-1">
+          <Bars3BottomLeftIcon className="h-4 w-4" />
+          Descripción
+        </label>
+        <textarea
+          rows={3}
+          className="w-full border p-3 rounded-lg"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </div>
+
+      {/* FILE UPLOAD */}
+      <div>
+        <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+          Archivo de Video (.mp4, .mov)
+        </label>
+        <input
+          type="file"
+          accept="video/*"
+          onChange={handleFileChange}
+          className="block w-full text-sm text-gray-600"
+          required
+        />
+      </div>
+
+      {/* CATEGORY SELECTOR */}
+      <div>
+        <label className="flex items-center text-sm font-medium text-gray-700 mb-2 gap-1">
+          <TagIcon className="h-4 w-4" />
+          Categorías (máx. {MAX_CATEGORIES})
+        </label>
+
+        <div className="flex flex-wrap gap-2">
+          {categories.map((c) => {
+            const active = selectedCategories.includes(c.category_id);
+
+            return (
+              <button
+                key={c.category_id}
+                type="button"
+                onClick={() => toggleCategory(c.category_id)}
+                className={`px-3 py-1 rounded-full text-sm border transition
+                  ${
+                    active
+                      ? "bg-blue-600 text-white border-blue-600 shadow"
+                      : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
+                  }`}
+              >
+                {c.name}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* SUBMIT BUTTON */}
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-blue-600 text-white p-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:bg-gray-400"
+      >
+        {loading ? "Subiendo..." : "Subir Videoclip"}
+      </button>
     </form>
   );
 };

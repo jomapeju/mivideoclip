@@ -1,19 +1,18 @@
-import React from 'react';
-import type { Metadata } from "next";
-import Header from '../../components/Header';
-
-export const metadata: Metadata = {
-  title: "MyVideoClip",
-  description: "Tu plataforma de videoclips",
-};
+import Header from "../../components/layout/Header";
+import Footer from "../../components/layout/Footer";
 
 export default function AppLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div>
-        <Header />
-        <main className="mt-4">{children}</main>
-      </div>
+    <>
+      <Header />
+      <main className="app-main">
+        <div className="app-container py-6 md:py-8">{children}</div>
+      </main>
+      <Footer />
+    </>
   );
 }

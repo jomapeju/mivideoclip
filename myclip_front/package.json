@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "axios": "^1.7.2",
     "js-cookie": "^3.0.5",
     "next": "14.2.4",

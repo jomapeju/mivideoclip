@@ -1,18 +1,19 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import videojs from 'video.js';
 import Player from 'video.js/dist/types/player';
-// Importamos el CSS de Video.js
-import 'video.js/dist/video-js.css'; 
+import 'video.js/dist/video-js.css';
 
-// Definición de las opciones del reproductor
+// Estilos extra Video.js modernos
+import './videojs-theme.css';
+
 interface VideoPlayerProps {
   options: {
-    autoplay: boolean;
-    controls: boolean;
-    responsive: boolean;
-    fluid: boolean;
+    autoplay?: boolean;
+    controls?: boolean;
+    responsive?: boolean;
+    fluid?: boolean;
     sources: {
       src: string;
       type: string;
@@ -20,34 +21,34 @@ interface VideoPlayerProps {
   };
 }
 
-// Este componente utiliza una referencia (ref) para interactuar con el DOM
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ options }) => {
   const videoRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<Player | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Inicializar el reproductor solo si no existe
     if (!playerRef.current) {
       const videoElement = document.createElement('video');
-      videoElement.classList.add('video-js', 'vjs-big-play-centered');
-      
+      videoElement.classList.add(
+        'video-js',
+        'vjs-big-play-centered',
+        'vjs-theme-myclip'
+      );
+
       if (videoRef.current) {
         videoRef.current.appendChild(videoElement);
       }
-      
-      // 2. Crear la instancia de Video.js
+
       const player = videojs(videoElement, options, () => {
-        console.log('Video.js player is ready');
+        setTimeout(() => setLoading(false), 500); // Suaviza transición
       });
-      
+
       playerRef.current = player;
     }
   }, [options]);
 
-  // 3. Limpieza: Destruir el reproductor al desmontar el componente (CRUCIAL)
   useEffect(() => {
     const player = playerRef.current;
-
     return () => {
       if (player && !player.isDisposed()) {
         player.dispose();
@@ -56,10 +57,19 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ options }) => {
     };
   }, []);
 
-  // 4. Renderizar el contenedor donde se montará el reproductor
   return (
-    <div data-vjs-player>
-      <div ref={videoRef} />
+    <div className="relative w-full bg-black rounded-xl overflow-hidden shadow-lg">
+      {/* LOADER ⬇ */}
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
+        </div>
+      )}
+
+      {/* CONTENEDOR DEL PLAYER */}
+      <div data-vjs-player>
+        <div ref={videoRef} />
+      </div>
     </div>
   );
 };

@@ -1,14 +1,18 @@
-import React from "react";
-import Header from "../../components/Header";
-import { getServerUser } from "../../lib/server/getServerUser";
+import Header from "../../components/layout/Header";
+import Footer from "../../components/layout/Footer";
 
-export default async function PublicLayout({ children }: { children: React.ReactNode }) {
-  const user = await getServerUser();
-
+export default function PublicLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Header user={user} />
-      <main className="max-w-6xl mx-auto p-4">{children}</main>
-    </div>
+    <>
+      <Header />
+      <main className="app-main">
+        <div className="app-container py-6 md:py-8">{children}</div>
+      </main>
+      <Footer />
+    </>
   );
 }
