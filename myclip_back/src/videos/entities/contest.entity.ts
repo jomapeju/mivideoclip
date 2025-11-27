@@ -1,3 +1,4 @@
+/* eslint-disable */
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -25,10 +26,10 @@ export class Contest {
   @Column({ type: 'text' })
   description: string;
 
-  @Column({ type: 'timestamp', name: 'start_date' })
+  @Column({ type: 'timestamptz' })
   start_date: Date;
 
-  @Column({ type: 'timestamp', name: 'end_date' })
+  @Column({ type: 'timestamptz' })
   end_date: Date;
 
   @Column({
@@ -38,10 +39,13 @@ export class Contest {
   })
   status: ContestStatus;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @Column({ name: 'max_videos_per_user', type: 'int', nullable: true })
+  maxVideosPerUser: number | null;
+
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   created_at: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updated_at: Date;
 
   @OneToMany(() => ContestVideo, (cv) => cv.contest)

@@ -4,7 +4,7 @@ import { Contest } from './contest.entity';
 import { Video } from './video.entity';
 import { User } from '../../users/entities/user.entity/user.entity';
 
-@Index(['contestId', 'userId', 'videoId'], { unique: true })// Un usuario solo puede votar una vez por concurso y video
+@Index(['contestId', 'userId'], { unique: true })// Un usuario solo puede votar una vez por concurso y video
 @Entity('contest_votes')
 export class ContestVote {
     @PrimaryGeneratedColumn('uuid')

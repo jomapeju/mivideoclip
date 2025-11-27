@@ -1,11 +1,22 @@
-import { IsString, IsDateString, IsEnum, IsOptional } from 'class-validator';
+/* eslint-disable */
+import {
+  IsString,
+  IsNotEmpty,
+  IsDateString,
+  IsOptional,
+  IsEnum,
+  IsInt,
+  Min,
+} from 'class-validator';
 import { ContestStatus } from '../../entities/contest.entity';
 
 export class CreateContestDto {
   @IsString()
+  @IsNotEmpty()
   title: string;
 
   @IsString()
+  @IsNotEmpty()
   description: string;
 
   @IsDateString()
@@ -17,4 +28,9 @@ export class CreateContestDto {
   @IsOptional()
   @IsEnum(ContestStatus)
   status?: ContestStatus;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  maxVideosPerUser?: number;
 }

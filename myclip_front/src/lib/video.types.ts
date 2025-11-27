@@ -40,3 +40,24 @@ export interface Category {
     createdAt: string;   // Los timestamps normalmente llegan como string ISO
     updatedAt: string;
 }
+
+export type ContestStatus = 'UPCOMING' | 'ACTIVE' | 'CLOSED';
+
+export interface Contest {
+  contest_id: string;
+  title: string;
+  description: string;
+  start_date: string;  // la API devuelve Date → en JSON será string
+  end_date: string;
+  status: ContestStatus;
+  created_at: string;
+}
+
+export interface ContestVideoParticipant {
+  id: string;
+  contestId: string;
+  videoId: string;
+  contestVoteCount: number;
+  submissionDate: string;
+  video: Video; // reutilizamos tu tipo Video
+}

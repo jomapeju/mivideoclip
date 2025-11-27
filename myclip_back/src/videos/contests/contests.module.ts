@@ -5,9 +5,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ContestsController } from './contests.controller';
 import { ContestsService } from './contests.service';
 import { Contest } from '../entities/contest.entity';
+import { ContestVideo } from '../entities/contest-video.entity';
+import { Video } from '../entities/video.entity';
+import { AuthModule } from '../../auth/auth.module';
+import { ContestVote } from '../entities/contest-vote.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Contest])],
+  imports: [TypeOrmModule.forFeature([Contest, ContestVideo, ContestVote, Video]), AuthModule],
   controllers: [ContestsController],
   providers: [ContestsService],
   exports: [ContestsService],
