@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { VideosService } from './videos.service';
@@ -13,6 +14,7 @@ import { ContestVideo } from './entities/contest-video.entity';
 import { ContestVote } from './entities/contest-vote.entity';
 import { VideoMetrics } from './entities/video-metrics.entity';
 import { CategoryVideoStats } from './entities/category-video-stats.entity';
+import { ContestsModule } from './contests/contests.module';
 
 @Module({
   imports: [
@@ -29,6 +31,7 @@ import { CategoryVideoStats } from './entities/category-video-stats.entity';
       CategoryVideoStats,
     ]),
     AuthModule, // Importar AuthModule para usar JwtAuthGuard
+    ContestsModule
   ],
   controllers: [VideosController],
   providers: [VideosService],

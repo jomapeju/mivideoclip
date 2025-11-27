@@ -1,43 +1,49 @@
-/* eslint-disable */
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
 import { ContestVideo } from './contest-video.entity';
 
 export enum ContestStatus {
-    UPCOMING = 'UPCOMING',
-    ACTIVE = 'ACTIVE',
-    CLOSED = 'CLOSED',
+  UPCOMING = 'UPCOMING',
+  ACTIVE = 'ACTIVE',
+  CLOSED = 'CLOSED',
 }
 
 @Entity('contests')
 export class Contest {
-    @PrimaryGeneratedColumn('uuid')
-    contest_id: string;
+  @PrimaryGeneratedColumn('uuid')
+  contest_id: string;
 
-    @Column({ length: 255 })
-    title: string;
+  @Column({ length: 255 })
+  title: string;
 
-    @Column({ type: 'text' })
-    description: string;
+  @Column({ type: 'text' })
+  description: string;
 
-    @Column({ type: 'timestamp' })
-    start_date: Date;
+  @Column({ type: 'timestamp', name: 'start_date' })
+  start_date: Date;
 
-    @Column({ type: 'timestamp' })
-    end_date: Date;
-    
-    @Column({ type: 'enum', enum: ContestStatus, default: ContestStatus.UPCOMING })
-    status: ContestStatus;
+  @Column({ type: 'timestamp', name: 'end_date' })
+  end_date: Date;
 
-    @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
-    createdAt: Date;
+  @Column({
+    type: 'enum',
+    enum: ContestStatus,
+    default: ContestStatus.UPCOMING,
+  })
+  status: ContestStatus;
 
-    @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
-    updatedAt: Date;
+  @CreateDateColumn({ type: 'timestamptz' })
+  created_at: Date;
 
-    @Column({ type: 'boolean', default: true })
-    isPublic: boolean; // Por si hay concursos ocultos o privados
+  @UpdateDateColumn({ type: 'timestamptz' })
+  updated_at: Date;
 
-    // Relación con videos inscritos
-    @OneToMany(() => ContestVideo, contestVideo => contestVideo.contest)
-    submissions: ContestVideo[];
+  @OneToMany(() => ContestVideo, (cv) => cv.contest)
+  submissions: ContestVideo[];
 }
