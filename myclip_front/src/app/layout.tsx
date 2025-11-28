@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import "./globals.css"; 
+import "./globals.css";
+import ReCaptchaProviderClient from "../components/ReCaptchaProviderClient";
 
 export const metadata: Metadata = {
   title: "MyVideoClip",
@@ -8,12 +9,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="es">
-      <body className="app-shell">{children}</body>
+      <body className="app-shell">
+        <ReCaptchaProviderClient>
+          {children}
+        </ReCaptchaProviderClient>
+      </body>
     </html>
   );
 }

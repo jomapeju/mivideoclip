@@ -3,6 +3,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../../users/users.service';
 import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -46,13 +47,33 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
-    const user = await this.validateCredentials(email, password);
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new UnauthorizedException('Credenciales incorrectas.');
+    }
 
-    const tokens = await this.generateTokens(user.user_id);
+    const valid = await this.comparePassword(password, user.passwordHash);
+    if (!valid) {
+      throw new UnauthorizedException('Credenciales incorrectas.');
+    }
+
+    // 🚨 BLOQUEAR si el email NO está verificado
+    if (!user.emailVerified) {
+      throw new UnauthorizedException(
+        'Tu correo está sin verificar. Revisa tu email y activa tu cuenta.',
+      );
+    }
+
+    // Tokens
+    const { accessToken, refreshToken, accessExp, refreshExp } =
+      await this.generateTokens(user.user_id);
 
     return {
       user,
-      ...tokens,
+      accessToken,
+      refreshToken,
+      accessExp,
+      refreshExp,
     };
   }
 
@@ -76,5 +97,9 @@ export class AuthService {
     } catch (e) {
       throw new UnauthorizedException('Refresh token inválido');
     }
+  }
+
+  comparePassword(password: string, hash: string): Promise<boolean> {
+    return bcrypt.compare(password, hash);
   }
 }

@@ -1,42 +1,52 @@
 /* eslint-disable */
 import { Module, forwardRef } from '@nestjs/common';
 import { AuthController } from './auth/auth.controller';
-import { UsersModule } from '../users/users.module'; // Importar UsersModule
-import { PassportModule } from '@nestjs/passport'; // Nuevo
-import { JwtModule } from '@nestjs/jwt'; // Nuevo
-import * as dotenv from 'dotenv'; // Importar dotenv para leer el secreto antes de la configuración
-import { JwtStrategy } from './strategy/jwt.strategy';
+import { UsersModule } from '../users/users.module';
+import { PassportModule } from '@nestjs/passport';
+import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { UsersService } from '../users/users.service';
+import { JwtStrategy } from './strategy/jwt.strategy';
 import { AuthService } from './auth/auth.service';
-
-dotenv.config(); // Cargar variables de entorno
-
-const JwtModuleConfig = JwtModule.register({
-  secret: process.env.JWT_SECRET,
-  signOptions: { expiresIn: '7d' },
-});
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { EmailVerificationToken } from './entities/email-token.entity';
+import { EmailVerificationService } from './email-verification.service';
+import { EmailService } from './auth/email.service';
+import { RateLimitService } from '../common/rate-limit/rate-limit.service';
+import { RateLimitGuard } from '../common/rate-limit/rate-limit.guard';
 
 @Module({
   imports: [
-    forwardRef(() => UsersModule), // Importar UsersModule con forwardRef para evitar dependencias circulares
-    PassportModule, // Módulo base de Passport
-    // Configuración para usar Passport con JWT
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+
+    forwardRef(() => UsersModule),
+
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModuleConfig,
-    ConfigModule,
+
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '7d' },
+      }),
+    }),
+
+    TypeOrmModule.forFeature([EmailVerificationToken]),
   ],
+
   controllers: [AuthController],
-  providers: [JwtStrategy,
+
+  providers: [
+    JwtStrategy,
     AuthService,
-    UsersService,
-    {
-      provide: ConfigService, // Asegúrate de proveer el ConfigService
-      useClass: ConfigService,
-    }
+    EmailService,
+    EmailVerificationService,
+    RateLimitService,
+    RateLimitGuard,
   ],
-  // TODO: Nota: El servicio de autenticación (AuthService) se implementará aquí en un proyecto real.
-  // Por simplicidad, pondremos la lógica en el servicio de usuarios por ahora.
-  exports: [JwtModuleConfig, PassportModule, JwtStrategy],
+
+  exports: [JwtStrategy, PassportModule, JwtModule],
 })
 export class AuthModule {}

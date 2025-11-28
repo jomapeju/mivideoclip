@@ -1,4 +1,5 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator'; 
+/* eslint-disable */
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional } from 'class-validator'; 
 // Asegúrate de tener todos estos imports
 
 export class CreateUserDto {
@@ -14,4 +15,9 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'La contraseña es obligatoria.' })
   @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres.' })
   password: string;
+
+  @IsString({ message: 'El token debe ser una cadena de texto.' })
+  @IsOptional({ message: 'El token es obligatorio.' })
+  recaptchaToken: string;
+
 }

@@ -19,6 +19,9 @@ export class User {
   @Column({ unique: true, length: 100 })
   email: string;
 
+  @Column({ name: 'email_verified', type: 'boolean', default: false })
+  emailVerified: boolean;
+
   // El hash de la contraseña es crucial para la seguridad
   @Column({ name: 'password_hash', length: 255 })
   passwordHash: string;

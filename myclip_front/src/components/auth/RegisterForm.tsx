@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "../../services/api.service";
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import {
   EnvelopeIcon,
   LockClosedIcon,
@@ -24,8 +25,14 @@ export default function RegisterForm() {
     setError("");
     setLoading(true);
 
+    if (!executeRecaptcha) {
+      setError("No se pudo inicializar reCAPTCHA.");
+      return;
+    }
+    const recaptchaToken = await executeRecaptcha("register");
+
     try {
-      const payload = { username, email, password };
+      const payload = { username, email, password, recaptchaToken };
       await api.post("/auth/register", payload);
 
       router.push("/login"); // registro OK → login
@@ -36,6 +43,8 @@ export default function RegisterForm() {
       setLoading(false);
     }
   };
+
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">

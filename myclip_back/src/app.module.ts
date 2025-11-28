@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable*/
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
@@ -7,6 +7,8 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { VideosModule } from './videos/videos.module';
 import { ContestsModule } from './videos/contests/contests.module';
+import { RateLimitService } from './common/rate-limit/rate-limit.service';
+import { RateLimitGuard } from './common/rate-limit/rate-limit.guard';
 
 @Module({
   imports: [
@@ -34,7 +36,10 @@ import { ContestsModule } from './videos/contests/contests.module';
     ContestsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, 
+    RateLimitService,
+    RateLimitGuard,
+  ],
 })
 export class AppModule {
   constructor() {

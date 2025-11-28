@@ -48,6 +48,7 @@ export class UsersService {
       email,
       passwordHash,
       reputationScore: 0,
+      emailVerified: false,
     });
 
     await this.usersRepository.save(newUser);
@@ -74,6 +75,17 @@ export class UsersService {
 
     throw new UnauthorizedException('Credenciales inválidas');
   }
+
+
+  // ===========================
+  // VALIDACIÓN (REGISTRO POR EMAIL)
+  // ===========================
+  async markEmailVerified(userId: string) {
+    await this.usersRepository.update(
+      { user_id: userId } as any, // o { id: userId } según tu PK real
+      { emailVerified: true },
+    );
+}
 
   // ===========================
   // BUSCAR USUARIO POR ID (JWT Strategy)
@@ -107,4 +119,11 @@ export class UsersService {
 
     return list.map((u) => ({ ...u, id: u.user_id }));
   }
+
+  async findByEmail(email: string) {
+    return await this.usersRepository.findOne({
+      where: { email },
+    });
+  }
+
 }
