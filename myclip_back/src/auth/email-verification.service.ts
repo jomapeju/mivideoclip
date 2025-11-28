@@ -1,89 +1,113 @@
 /* eslint-disable */
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, LessThan } from 'typeorm';
+import { EmailVerificationToken } from './entities/email-token.entity';
+import { UsersService } from '../users/users.service';
+import { EmailService } from './auth/email.service';
+import { v4 as uuid } from 'uuid';
 import { randomBytes } from 'crypto';
-import * as nodemailer from 'nodemailer';
-import { EmailVerificationToken } from '../auth/entities/email-token.entity';
-
-
 
 @Injectable()
 export class EmailVerificationService {
-  private readonly logger = new Logger(EmailVerificationService.name);
-  private transporter: nodemailer.Transporter | null = null;
-
   constructor(
     @InjectRepository(EmailVerificationToken)
-    private readonly tokensRepo: Repository<EmailVerificationToken>,
-  ) {
-    this.initTransporter();
+    private readonly tokenRepo: Repository<EmailVerificationToken>,
+    private readonly usersService: UsersService,
+    private readonly emailService: EmailService,
+  ) {}
+
+  private getFrontendBase(): string {
+    return (
+      process.env.FRONTEND_URL ||
+      'http://localhost:4000'
+    );
   }
 
-  private initTransporter() {
-    const host = process.env.MAIL_HOST;
-    const port = process.env.MAIL_PORT;
-    const user = process.env.MAIL_USER;
-    const pass = process.env.MAIL_PASS;
-
-    if (host && port && user && pass) {
-      this.transporter = nodemailer.createTransport({
-        host,
-        port: Number(port),
-        secure: Number(port) === 465,
-        auth: { user, pass },
-      });
-    } else {
-      this.logger.warn(
-        'MAIL_* env vars not fully set. Email verification links will be logged to console only.',
-      );
+  /**
+   * Genera y envía un email de verificación a un usuario.
+   * Se usa tanto en register como en /resend-verification.
+   */
+  async sendVerificationEmail(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      // Para no filtrar usuarios existentes
+      throw new BadRequestException('Si el correo existe, se enviará un email de verificación.');
     }
+
+    if (user.emailVerified) {
+      throw new BadRequestException('Este correo ya está verificado.');
+    }
+
+    // Opcional: limpiar tokens antiguos
+    await this.tokenRepo.delete({
+      userId: user.user_id,
+      expiresAt: LessThan(new Date()),
+    });
+
+    // Crear nuevo token
+    const token = uuid();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1h
+
+    const entity = this.tokenRepo.create({
+      userId: user.user_id,
+      token,
+      expiresAt,
+    });
+    await this.tokenRepo.save(entity);
+
+    const verifyUrl = `${this.getFrontendBase()}/auth/verify-email?token=${token}`;
+
+    const { subject, html, text } = this.emailService.buildVerificationEmail({
+      username: user.username,
+      verifyUrl,
+    });
+
+    await this.emailService.sendMail({
+      to: email,
+      subject,
+      html,
+      text,
+    });
+
+    return { message: 'Email de verificación enviado (si el correo existe).' };
   }
 
+   // 🔹 Generar token y guardarlo en BD
   async generate(userId: string): Promise<string> {
     const token = randomBytes(32).toString('hex');
 
-    const entity = this.tokensRepo.create({
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24); // 24h
+
+    const entity = this.tokenRepo.create({
       userId,
       token,
-      expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1h
+      expiresAt,
+      usedAt: null,
     });
 
-    await this.tokensRepo.save(entity);
+    await this.tokenRepo.save(entity);
     return token;
   }
 
+  /**
+   * Valida un token y devuelve userId si es válido.
+   * NO marca todavía el email como verificado.
+   */
   async validate(token: string): Promise<string | null> {
-    const item = await this.tokensRepo.findOne({ where: { token } });
-    if (!item) return null;
-    if (item.expiresAt < new Date()) return null;
-    return item.userId;
-  }
-
-  async sendVerificationEmail(email: string, token: string) {
-    const appBaseUrl =
-      process.env.APP_BASE_URL || 'http://localhost:4000';
-
-    const verifyUrl = `${appBaseUrl}/api/v1/auth/verify-email?token=${token}`;
-
-    if (!this.transporter) {
-      // Modo desarrollo: mostrar en log
-      this.logger.log(
-        `[DEV] Verification link for ${email}: ${verifyUrl}`,
-      );
-      return;
-    }
-
-    await this.transporter.sendMail({
-      from: process.env.MAIL_FROM || '"MyClip" <no-reply@myclip.com>',
-      to: email,
-      subject: 'Verifica tu correo en MyClip',
-      html: `
-        <p>Hola,</p>
-        <p>Gracias por registrarte en MyClip. Haz clic en el siguiente enlace para verificar tu correo:</p>
-        <p><a href="${verifyUrl}">${verifyUrl}</a></p>
-        <p>Si no has creado esta cuenta, puedes ignorar este mensaje.</p>
-      `,
+    const entity = await this.tokenRepo.findOne({
+      where: { token },
     });
+
+    if (!entity) return null;
+    if (entity.usedAt) return null;
+    if (entity.expiresAt < new Date()) return null;
+
+    // marcar como usado
+    entity.usedAt = new Date();
+    await this.tokenRepo.save(entity);
+
+    return entity.userId;
   }
 }

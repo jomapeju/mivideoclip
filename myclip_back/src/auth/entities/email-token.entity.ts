@@ -26,4 +26,7 @@ export class EmailVerificationToken {
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
+
+  @Column({ name: 'used_at', type: 'timestamptz', nullable: true })
+  usedAt: Date | null;
 }

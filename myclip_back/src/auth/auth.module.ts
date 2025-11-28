@@ -13,6 +13,8 @@ import { EmailVerificationService } from './email-verification.service';
 import { EmailService } from './auth/email.service';
 import { RateLimitService } from '../common/rate-limit/rate-limit.service';
 import { RateLimitGuard } from '../common/rate-limit/rate-limit.guard';
+import { ResendVerificationGuard } from '../common/rate-limit/resend-verification.guard';
+import { EmailWebhookController } from './email-webhook.controller';
 
 @Module({
   imports: [
@@ -36,7 +38,7 @@ import { RateLimitGuard } from '../common/rate-limit/rate-limit.guard';
     TypeOrmModule.forFeature([EmailVerificationToken]),
   ],
 
-  controllers: [AuthController],
+  controllers: [AuthController, EmailWebhookController],
 
   providers: [
     JwtStrategy,
@@ -45,6 +47,7 @@ import { RateLimitGuard } from '../common/rate-limit/rate-limit.guard';
     EmailVerificationService,
     RateLimitService,
     RateLimitGuard,
+    ResendVerificationGuard,
   ],
 
   exports: [JwtStrategy, PassportModule, JwtModule],

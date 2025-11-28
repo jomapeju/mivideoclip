@@ -31,6 +31,7 @@ import {
   REFRESH_TOKEN_COOKIE,
 } from '../cookie.constants';
 import { EmailService } from './email.service';
+import { ResendVerificationGuard } from '../../common/rate-limit/resend-verification.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -97,7 +98,7 @@ export class AuthController {
 
     // 4. Generar token de verificación de email y "enviar" correo
     const token = await this.emailVerificationService.generate(user.user_id || user.id);
-    await this.emailVerificationService.sendVerificationEmail(user.email, token);
+    await this.emailVerificationService.sendVerificationEmail(user.email);
 
     return {
       user,
@@ -106,25 +107,38 @@ export class AuthController {
     };
   }
 
-
+  @UseGuards(RateLimitGuard, ResendVerificationGuard)
   @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
   async resend(@Body('email') email: string) {
+    if (!email) {
+      throw new BadRequestException('Email es obligatorio.');
+    }
+
     const user = await this.usersService.findByEmail(email);
-    if (!user) throw new BadRequestException('Usuario no encontrado.');
+    if (!user) {
+      throw new BadRequestException('Usuario no encontrado.');
+    }
 
     if (user.emailVerified) {
       throw new BadRequestException('El email ya está verificado.');
     }
 
-    // Generar nuevo token
-    const token = await this.emailService.generateVerificationToken(user.user_id);
+    // 🔹 Generar nuevo token de verificación
+    const token = await this.emailVerificationService.generate(
+      user.user_id
+    );
 
-    // Reenviar correo
-    await this.emailService.sendVerificationEmail(user.email, token);
+    // 🔹 Enviar email de verificación
+    await this.emailVerificationService.sendVerificationEmail(
+      user.email
+    );
 
-    return { message: 'Correo reenviado. Revisa tu bandeja de entrada.' };
+    return {
+      message: 'Correo de verificación reenviado. Revisa tu bandeja de entrada.',
+    };
   }
+
 
   // ==========================
   //   VERIFY EMAIL

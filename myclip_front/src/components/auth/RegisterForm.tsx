@@ -19,10 +19,13 @@ export default function RegisterForm() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState<string | null>(null);
+  
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess(null);
     setLoading(true);
 
     if (!executeRecaptcha) {
@@ -35,7 +38,14 @@ export default function RegisterForm() {
       const payload = { username, email, password, recaptchaToken };
       await api.post("/auth/register", payload);
 
-      router.push("/login"); // registro OK → login
+      setSuccess(
+        "Registro completado. Te hemos enviado un email para verificar tu cuenta. Debes activarla antes de poder iniciar sesión."
+      );
+
+      // Redirigir tras 4s
+      setTimeout(() => {
+        router.push('/login');
+      }, 4000);
     } catch (err: any) {
       const msg = err.response?.data?.message || "No se pudo registrar.";
       setError(Array.isArray(msg) ? msg.join(", ") : msg);
@@ -48,7 +58,11 @@ export default function RegisterForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
-
+      {success && (
+          <p className="p-3 mb-4 bg-green-100 text-green-700 border border-green-300 rounded">
+            {success}
+          </p>
+        )}
       {/* USERNAME */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
