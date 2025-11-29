@@ -15,6 +15,9 @@ import { ContestVote } from './entities/contest-vote.entity';
 import { VideoMetrics } from './entities/video-metrics.entity';
 import { CategoryVideoStats } from './entities/category-video-stats.entity';
 import { ContestsModule } from './contests/contests.module';
+import { RateLimitService } from '../common/rate-limit/rate-limit.service';
+import { CommentRateLimitGuard } from '../common/rate-limit/comment-rate-limit.guard';
+
 
 @Module({
   imports: [
@@ -34,6 +37,9 @@ import { ContestsModule } from './contests/contests.module';
     ContestsModule
   ],
   controllers: [VideosController],
-  providers: [VideosService],
+  providers: [VideosService,
+    RateLimitService,
+    CommentRateLimitGuard,
+  ],
 })
 export class VideosModule {}

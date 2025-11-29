@@ -1,16 +1,25 @@
 /* eslint-disable */
-import { randomBytes } from 'crypto';
+import { createHash } from 'crypto';
 
+/**
+ * Genera una huella (fingerprint) basada en:
+ *  - IP (x-forwarded-for o remoteAddress)
+ *  - User-Agent
+ *  - Accept-Language
+ *
+ * Resultado: hash SHA-256 estable por dispositivo/navegador.
+ */
 export function generateFingerprint(req: any): string {
   const ip =
-    req.ip ||
-    req.headers['x-forwarded-for'] ||
+    (req.headers['x-forwarded-for']?.split(',')[0] ?? '').trim() ||
     req.connection?.remoteAddress ||
-    'unknown-ip';
+    req.ip ||
+    'unknown_ip';
 
-  const ua = req.headers['user-agent'] || 'unknown-ua';
-  const rand = randomBytes(16).toString('hex');
+  const ua = req.headers['user-agent'] || 'unknown_ua';
+  const lang = req.headers['accept-language'] || 'unknown_lang';
 
-  return `${ip}|${ua}|${rand}`;
+  const raw = `${ip}|${ua}|${lang}`;
+
+  return createHash('sha256').update(raw).digest('hex');
 }
-

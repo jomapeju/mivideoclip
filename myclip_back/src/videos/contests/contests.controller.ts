@@ -18,6 +18,8 @@ import { CreateContestDto } from './dto/create-contest.dto';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { UpdateContestDto } from './dto/update-contest.dto';
 import { VoteContestDto } from './dto/vote-contest.dto';
+import { ContestSubmitGuard } from '../../common/rate-limit/contest-submit.guard';
+import { ContestVoteGuard } from '../../common/rate-limit/contest-vote.guard';
 
 
 @Controller('contests')
@@ -61,7 +63,7 @@ export class ContestsController {
    * POST /api/v1/contests/:contestId/submit
    * Body: { "videoId": "uuid" }
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ContestSubmitGuard)
   @Post(':contestId/submit')
   @HttpCode(HttpStatus.CREATED)
   async submitVideo(
@@ -119,7 +121,7 @@ export class ContestsController {
    * POST /api/v1/contests/:contestId/vote
    * Body: { "videoId": "uuid" }
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ContestVoteGuard)
   @Post(':contestId/vote')
   @HttpCode(HttpStatus.CREATED)
   async vote(

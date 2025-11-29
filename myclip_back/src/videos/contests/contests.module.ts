@@ -9,11 +9,19 @@ import { ContestVideo } from '../entities/contest-video.entity';
 import { Video } from '../entities/video.entity';
 import { AuthModule } from '../../auth/auth.module';
 import { ContestVote } from '../entities/contest-vote.entity';
+import { RateLimitService } from '../../common/rate-limit/rate-limit.service';
+import { ContestVoteGuard } from '../../common/rate-limit/contest-vote.guard';
+import { ContestSubmitGuard } from '../../common/rate-limit/contest-submit.guard';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Contest, ContestVideo, ContestVote, Video]), AuthModule],
   controllers: [ContestsController],
-  providers: [ContestsService],
+  providers: [ContestsService,
+    ContestsService,
+    RateLimitService,
+    ContestVoteGuard,
+    ContestSubmitGuard,
+  ],
   exports: [ContestsService],
 })
 export class ContestsModule {}

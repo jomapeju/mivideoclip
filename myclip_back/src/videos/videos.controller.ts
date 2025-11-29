@@ -24,6 +24,7 @@ import { Video } from './entities/video.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { Comment } from './entities/comment.entity';
 import { Category } from './entities/category.entity';
+import { CommentRateLimitGuard } from '../common/rate-limit/comment-rate-limit.guard';
 
 // TODO: Configuración de Multer para guardar el archivo en la carpeta 'uploads'
 const multerOptions = {
@@ -160,7 +161,7 @@ export class VideosController {
   }
 
   
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, CommentRateLimitGuard)
   @Post(':id/comments') 
   async postComment(
     @Param('id') videoId: string,

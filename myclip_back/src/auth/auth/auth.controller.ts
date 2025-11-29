@@ -32,6 +32,7 @@ import {
 } from '../cookie.constants';
 import { EmailService } from './email.service';
 import { ResendVerificationGuard } from '../../common/rate-limit/resend-verification.guard';
+import { FingerprintService } from '../../common/fingerprint/fingerprint.service';
 
 @Controller('auth')
 export class AuthController {
@@ -40,6 +41,7 @@ export class AuthController {
     private readonly usersService: UsersService,
     private readonly emailService: EmailService,
     private readonly emailVerificationService: EmailVerificationService,
+    private readonly fingerprintService: FingerprintService,
   ) {}
 
   // ==========================
@@ -85,6 +87,17 @@ export class AuthController {
 
     // 2. Generar fingerprint y guardarlo en cookie HttpOnly (para posibles futuros usos antifraude)
     const fp = generateFingerprint(req);
+
+    // Registrar intento por fingerprint
+    const fpCount = await this.fingerprintService.record(fp);
+
+    // Si hay demasiados registros recientes desde el mismo dispositivo → bloquear
+    if (fpCount > 5) {
+      throw new BadRequestException(
+        'Demasiados intentos de registro desde este dispositivo. Inténtalo de nuevo más tarde.',
+      );
+    }
+
     res.cookie('fingerprint_id', fp, {
       httpOnly: true,
       sameSite: 'lax',
@@ -192,9 +205,22 @@ async verifyEmailManual(@Body() body: { email: string }) {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
+    @Req() req,
     @Body() dto: LoginUserDto,
     @Res({ passthrough: true }) res: Response,
   ) {
+    
+    // Fingerprint antifraude
+    const fp = generateFingerprint(req);
+    const fpCount = await this.fingerprintService.record(fp);
+
+    // Por ejemplo, si el mismo dispositivo hace > 20 intentos de login en 1h → bloqueo
+    if (fpCount > 20) {
+      throw new BadRequestException(
+        'Demasiados intentos de acceso desde este dispositivo. Espera unos minutos antes de volver a intentarlo.',
+      );
+    }
+    
     const { user, accessToken, refreshToken, accessExp, refreshExp } =
       await this.authService.login(dto.email, dto.password);
 

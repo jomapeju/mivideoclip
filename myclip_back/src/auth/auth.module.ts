@@ -15,6 +15,7 @@ import { RateLimitService } from '../common/rate-limit/rate-limit.service';
 import { RateLimitGuard } from '../common/rate-limit/rate-limit.guard';
 import { ResendVerificationGuard } from '../common/rate-limit/resend-verification.guard';
 import { EmailWebhookController } from './email-webhook.controller';
+import { FingerprintService } from '../common/fingerprint/fingerprint.service';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { EmailWebhookController } from './email-webhook.controller';
     RateLimitService,
     RateLimitGuard,
     ResendVerificationGuard,
+    FingerprintService,
   ],
 
   exports: [JwtStrategy, PassportModule, JwtModule],
