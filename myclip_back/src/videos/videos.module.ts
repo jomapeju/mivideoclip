@@ -17,6 +17,9 @@ import { CategoryVideoStats } from './entities/category-video-stats.entity';
 import { ContestsModule } from './contests/contests.module';
 import { RateLimitService } from '../common/rate-limit/rate-limit.service';
 import { CommentRateLimitGuard } from '../common/rate-limit/comment-rate-limit.guard';
+import { CommentsController } from "./comments.controller";
+import { CommentsService } from "./comments.service";
+import { CommentReaction } from "./entities/comment-reaction.entity";
 
 
 @Module({
@@ -26,6 +29,7 @@ import { CommentRateLimitGuard } from '../common/rate-limit/comment-rate-limit.g
       User,
       Vote, 
       Comment,
+      CommentReaction,
       Category,
       Contest,
       ContestVideo,
@@ -36,8 +40,9 @@ import { CommentRateLimitGuard } from '../common/rate-limit/comment-rate-limit.g
     AuthModule, // Importar AuthModule para usar JwtAuthGuard
     ContestsModule
   ],
-  controllers: [VideosController],
+  controllers: [VideosController, CommentsController],
   providers: [VideosService,
+    CommentsService,
     RateLimitService,
     CommentRateLimitGuard,
   ],

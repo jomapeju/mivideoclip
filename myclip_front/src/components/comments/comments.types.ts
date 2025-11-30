@@ -8,6 +8,12 @@ export interface Comment {
   content: string;
   createdAt: string;
   parentId?: string | null;
+
+  likeCount?: number;
+  dislikeCount?: number;
+
   user?: CommentUser;
-  replies?: Comment[];
+
+  // árbol de respuestas
+  children?: Comment[];
 }

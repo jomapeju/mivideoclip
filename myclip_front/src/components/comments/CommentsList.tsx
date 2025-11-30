@@ -1,5 +1,8 @@
+"use client";
+
 import React from "react";
-import type { Comment } from "../VideoDetailClient";
+import type { Comment } from "./comments.types";
+import CommentThread from "./CommentThread";
 
 type Props = {
   comments: Comment[];
@@ -11,15 +14,9 @@ export default function CommentsList({ comments }: Props) {
   }
 
   return (
-    <div className="space-y-4">
-      {comments.map((c) => (
-        <div key={c.comment_id} className="border-t pt-4">
-          <p className="text-gray-800">{c.content}</p>
-          <p className="text-xs text-gray-500 mt-1">
-            <strong>{c.user?.username ?? "Usuario"}</strong> ·{" "}
-            {new Date(c.createdAt).toLocaleString()}
-          </p>
-        </div>
+    <div className="space-y-6">
+      {comments.map((comment) => (
+        <CommentThread key={comment.comment_id} comment={comment} />
       ))}
     </div>
   );
