@@ -9,6 +9,8 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User } from './entities/user.entity/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
+import zxcvbn from 'zxcvbn';
+
 
 @Injectable()
 export class UsersService {
@@ -29,17 +31,28 @@ export class UsersService {
 
     if (existing) {
       if (existing.email === email) {
-        throw new ConflictException(
-          'El correo electrónico ya está registrado.',
-        );
+        throw new ConflictException('El correo electrónico ya está registrado.');
       }
       if (existing.username === username) {
-        throw new ConflictException(
-          'El nombre de usuario ya está en uso.',
-        );
+        throw new ConflictException('El nombre de usuario ya está en uso.');
       }
     }
 
+    // ==========================
+    // VALIDACIÓN DE FUERZA (ZXCVBN)
+    // ==========================
+    const strength = zxcvbn(password);
+
+    // score: 0 = muy débil, 4 = muy fuerte
+    if (strength.score < 3) {
+      throw new ConflictException(
+        'La contraseña es demasiado débil. Usa una más compleja.'
+      );
+    }
+
+    // ==========================
+    // HASH PASSWORD
+    // ==========================
     const salt = await bcrypt.genSalt();
     const passwordHash = await bcrypt.hash(password, salt);
 
@@ -61,6 +74,7 @@ export class UsersService {
       createdAt: newUser.createdAt,
     };
   }
+
 
   // ===========================
   // VALIDACIÓN (LOGIN)
