@@ -190,10 +190,12 @@ export const UploadForm = () => {
         <input
           type="file"
           accept="video/*"
+          capture="user"
           onChange={handleFileChange}
           className="block w-full text-sm text-gray-600"
           required
         />
+
       </div>
 
       {/* CATEGORY SELECTOR */}
