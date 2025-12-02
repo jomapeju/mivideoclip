@@ -33,6 +33,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Usuario no encontrado');
     }
 
-    return { id: user.user_id, email: user.email, username: user.username };
+    // 👇 IMPORTANTE: incluir isAdmin para guard de admin
+    return {
+      id: user.user_id,
+      email: user.email,
+      username: user.username,
+      isAdmin: (user as any).isAdmin ?? false,
+    };
   }
 }

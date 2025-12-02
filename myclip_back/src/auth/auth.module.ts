@@ -16,6 +16,7 @@ import { RateLimitGuard } from '../common/rate-limit/rate-limit.guard';
 import { ResendVerificationGuard } from '../common/rate-limit/resend-verification.guard';
 import { EmailWebhookController } from './email-webhook.controller';
 import { FingerprintService } from '../common/fingerprint/fingerprint.service';
+import { AdminGuard } from './admin.guard'; 
 
 @Module({
   imports: [
@@ -50,8 +51,9 @@ import { FingerprintService } from '../common/fingerprint/fingerprint.service';
     RateLimitGuard,
     ResendVerificationGuard,
     FingerprintService,
+    AdminGuard,              
   ],
 
-  exports: [JwtStrategy, PassportModule, JwtModule],
+  exports: [JwtStrategy, PassportModule, JwtModule, AdminGuard], 
 })
 export class AuthModule {}

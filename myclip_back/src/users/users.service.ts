@@ -101,25 +101,27 @@ export class UsersService {
     );
 }
 
-  // ===========================
-  // BUSCAR USUARIO POR ID (JWT Strategy)
-  // ===========================
-  async findById(id: string): Promise<User | null> {
-    const user = await this.usersRepository.findOne({
-      where: { user_id: id },
-      select: [
-        'user_id',
-        'username',
-        'email',
-        'reputationScore',
-        'createdAt',
-      ],
-    });
+    // ===========================
+    // BUSCAR USUARIO POR ID (JWT Strategy)
+    // ===========================
+    async findById(id: string): Promise<User | null> {
+      const user = await this.usersRepository.findOne({
+        where: { user_id: id },
+        select: [
+          'user_id',
+          'username',
+          'email',
+          'reputationScore',
+          'createdAt',
+          'isAdmin',   // 👈 AÑADIDO
+        ],
+      });
 
-    if (!user) return null;
+      if (!user) return null;
 
-    return { ...user, user_id: user.user_id };
-  }
+      return { ...user, user_id: user.user_id };
+    }
+
 
   // ===========================
   // RANKING

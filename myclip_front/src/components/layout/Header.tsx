@@ -65,6 +65,15 @@ export default async function Header() {
             Concursos
           </Link>
 
+          {/* 📰 Noticias (público) */}
+          <Link
+            href="/news"
+            className="hidden sm:inline-flex rounded-full border border-slate-700 px-3 py-1 
+              text-xs font-medium text-slate-200 hover:border-brand-primary hover:text-brand-primary transition"
+          >
+            Noticias
+          </Link>
+
           {/* ======================================================= */}
           {/* 🔐 Si NO hay usuario */}
           {/* ======================================================= */}
@@ -93,6 +102,17 @@ export default async function Header() {
           {/* ======================================================= */}
           {user && (
             <>
+              {/* Si es admin → acceso rápido a panel de noticias */}
+              {user.isAdmin && (
+                <Link
+                  href="/admin/news"
+                  className="hidden md:inline-flex rounded-full bg-amber-500/10 border border-amber-400 px-4 py-1.5 text-xs font-semibold 
+                    text-amber-200 hover:bg-amber-500/20 transition"
+                >
+                  Panel noticias
+                </Link>
+              )}
+
               <Link
                 href="/dashboard"
                 className="hidden sm:inline-flex rounded-full bg-slate-800 px-4 py-1.5 text-xs font-medium 

@@ -3,23 +3,38 @@ import type { Contest } from "../../lib/video.types";
 
 export const revalidate = 60;
 
+type NewsPost = {
+  id: string;
+  title: string;
+  slug: string;
+  category: "UPDATES" | "CONTESTS" | "RULES" | "OTHER";
+  excerpt?: string;
+  createdAt: string;
+};
+
 export default async function HomePage() {
   const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
 
-  const [categoriesRes, latestRes, popularRes, contestsRes] = await Promise.all([
-    fetch(`${apiBase}/videos/categories`, { cache: "no-store" }),
-    fetch(`${apiBase}/videos`, { cache: "no-store" }),
-    fetch(`${apiBase}/videos/popular`, { cache: "no-store" }),
-    fetch(`${apiBase}/contests`, {
-      cache: "force-cache",
-      next: { revalidate },
-    }),
-  ]);
+  const [categoriesRes, latestRes, popularRes, contestsRes, newsRes] =
+    await Promise.all([
+      fetch(`${apiBase}/videos/categories`, { cache: "no-store" }),
+      fetch(`${apiBase}/videos`, { cache: "no-store" }),
+      fetch(`${apiBase}/videos/popular`, { cache: "no-store" }),
+      fetch(`${apiBase}/contests`, {
+        cache: "force-cache",
+        next: { revalidate },
+      }),
+      fetch(`${apiBase}/news?limit=3`, {
+        cache: "force-cache",
+        next: { revalidate: 120 },
+      }),
+    ]);
 
   const categories = await categoriesRes.json();
   const latest = await latestRes.json();
   const popular = await popularRes.json();
   const contests: Contest[] = contestsRes.ok ? await contestsRes.json() : [];
+  const news: NewsPost[] = newsRes.ok ? await newsRes.json() : [];
 
   return (
     <main className="max-w-7xl mx-auto px-4 py-10 space-y-16">
@@ -89,6 +104,49 @@ export default async function HomePage() {
               >
                 {c.status}
               </span>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      {/* ------------------------------ */}
+      {/* 📰 ÚLTIMAS NOTICIAS */}
+      {/* ------------------------------ */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-3xl font-bold text-white-900">📰 Últimas noticias</h2>
+          <a
+            href="/news"
+            className="text-sm text-blue-300 hover:text-blue-200 underline"
+          >
+            Ver todas
+          </a>
+        </div>
+
+        {news.length === 0 && (
+          <p className="text-gray-400 text-sm">
+            De momento no hay noticias publicadas.
+          </p>
+        )}
+
+        <div className="grid md:grid-cols-3 gap-4">
+          {news.map((n) => (
+            <a
+              key={n.id}
+              href={`/news/${n.slug}`}
+              className="block rounded-xl bg-white shadow border border-gray-200 p-4 hover:shadow-md hover:border-gray-300 transition"
+            >
+              <p className="text-xs text-gray-500">
+                {new Date(n.createdAt).toLocaleDateString("es-ES")}
+              </p>
+              <h3 className="mt-1 font-semibold text-gray-900 line-clamp-2">
+                {n.title}
+              </h3>
+              {n.excerpt && (
+                <p className="mt-2 text-sm text-gray-600 line-clamp-3">
+                  {n.excerpt}
+                </p>
+              )}
             </a>
           ))}
         </div>

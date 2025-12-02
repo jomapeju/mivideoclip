@@ -2,8 +2,6 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  //OneToOne,
-  //JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -31,6 +29,10 @@ export class User {
 
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
+
+  // ⚠️ NUEVO: flag simple de admin
+  @Column({ name: 'is_admin', type: 'boolean', default: false })
+  isAdmin: boolean;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

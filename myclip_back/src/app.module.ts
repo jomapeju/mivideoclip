@@ -9,6 +9,7 @@ import { VideosModule } from './videos/videos.module';
 import { ContestsModule } from './videos/contests/contests.module';
 import { RateLimitService } from './common/rate-limit/rate-limit.service';
 import { RateLimitGuard } from './common/rate-limit/rate-limit.guard';
+import { NewsModule } from './news/news.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { RateLimitGuard } from './common/rate-limit/rate-limit.guard';
     AuthModule,
     VideosModule,
     ContestsModule,
+    NewsModule
   ],
   controllers: [AppController],
   providers: [AppService, 

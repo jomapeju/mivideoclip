@@ -7,8 +7,18 @@ const ACCESS_COOKIE = 'access_token';
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Dejar pasar recursos estáticos y las páginas públicas
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+  // Dejar pasar recursos estáticos y las páginas públicas base
+  if (PUBLIC_PATHS.some((p) => pathname === p)) {
+    return NextResponse.next();
+  }
+
+  // Permitir HOME público
+  if (pathname === '/') {
+    return NextResponse.next();
+  }
+
+  // ✅ Noticias públicas (/news y /news/[slug])
+  if (pathname.startsWith('/news')) {
     return NextResponse.next();
   }
 
@@ -18,8 +28,8 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Rutas privadas (dashboard, upload, videos/mine, rankings)
-  const PRIVATE_PREFIXES = ['/dashboard', '/upload', '/videos/mine', '/rankings'];
+  // Rutas privadas (dashboard, upload, videos/mine, rankings, admin)
+  const PRIVATE_PREFIXES = ['/dashboard', '/upload', '/videos/mine', '/rankings', '/admin'];
   if (PRIVATE_PREFIXES.some(p => pathname.startsWith(p))) {
     const access = req.cookies.get(ACCESS_COOKIE);
     if (!access) {
@@ -33,5 +43,11 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/upload/:path*', '/videos/mine/:path*', '/rankings/:path*'],
+  matcher: [
+    '/dashboard/:path*',
+    '/upload/:path*',
+    '/videos/mine/:path*',
+    '/rankings/:path*',
+    '/admin/:path*',
+  ],
 };
