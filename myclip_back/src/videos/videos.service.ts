@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In} from 'typeorm';
 import * as path from 'path'; // Para manejar rutas de archivos
@@ -9,6 +9,7 @@ import { Vote } from './entities/vote.entity';
 import { Category } from './entities/category.entity';
 import { Comment } from './entities/comment.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { VideoVisibility } from './entities/video.entity';
 
 @Injectable()
 export class VideosService {
@@ -51,12 +52,17 @@ export class VideosService {
         }
 
         const rawStoragePath = path.join('uploads', file.filename);
+        
+        const visibility = Object.values(VideoVisibility).includes(createVideoDto.visibility)
+        ? createVideoDto.visibility
+        : VideoVisibility.PUBLIC;
 
         const newVideo = this.videosRepository.create({
         ...createVideoDto,
         user_id: userId,
         rawStoragePath,
         status: VideoStatus.PENDING,
+        visibility: visibility
         });
 
         // Asignar categories (si las hay)
@@ -81,22 +87,28 @@ export class VideosService {
 
     async findAllPublicVideos(): Promise<Video[]> {
         return this.videosRepository.find({
-            where: { status: VideoStatus.ACTIVE },
+            where: { status: VideoStatus.ACTIVE, visibility: VideoVisibility.PUBLIC },
             order: { createdAt: 'DESC' },
         });
     }
 
-    async findOne(videoId: string): Promise<Video> {
+    async findOne(videoId: string, userId?: string): Promise<Video> {
         const video = await this.videosRepository.findOne({
             where: { video_id: videoId },
         });
 
-        if (!video) {
-           throw new NotFoundException(`Video con ID ${videoId} no encontrado.`); 
+        if (!video) throw new NotFoundException('Video no encontrado');
+
+        // 🚨 Si es privado, solo el dueño puede verlo
+        if (video.visibility === VideoVisibility.PRIVATE) {
+            if (!userId || video.user_id !== userId) {
+            throw new ForbiddenException('Este video es privado');
+            }
         }
 
         return video;
     }
+
 
     /**
      * TODO: SIMULACIÓN: Ejecuta el proceso de transcodificación asíncrono.
@@ -187,7 +199,10 @@ export class VideosService {
      */
     async findPopularVideos(limit: number = 20): Promise<Video[]> {
         return this.videosRepository.find({
-            where: { status: VideoStatus.ACTIVE }, 
+            where: { 
+                status: VideoStatus.ACTIVE,
+                visibility: VideoVisibility.PUBLIC,
+             }, 
             order: { voteCount: 'DESC', createdAt: 'DESC' }, 
             take: limit, 
         });
@@ -205,6 +220,7 @@ export class VideosService {
             .createQueryBuilder('v')
             .leftJoinAndSelect('v.categories', 'c')
             .where('v.status = :status', { status: VideoStatus.ACTIVE })
+            .andWhere('v.visibility = :vis', { vis: VideoVisibility.PUBLIC })
             .andWhere(`
             LOWER(v.title) LIKE LOWER(:q)
             OR LOWER(v.songTitle) LIKE LOWER(:q)
@@ -223,8 +239,23 @@ export class VideosService {
             .leftJoin('v.categories', 'c')
             .where('c.category_id = :categoryId', { categoryId })
             .andWhere('v.status = :status', { status: VideoStatus.ACTIVE })
+            .andWhere('v.visibility = :vis', { vis: VideoVisibility.PUBLIC })
             .orderBy('v.createdAt', 'DESC')
             .getMany();
     }
+
+    async updateVisibility(
+        videoId: string,
+        visibility: VideoVisibility,
+        userId: string,
+        ) {
+        const video = await this.videosRepository.findOne({ where: { video_id: videoId } });
+        if (!video) throw new NotFoundException('Video no encontrado');
+        if (video.user_id !== userId) {
+            throw new ForbiddenException('No puedes modificar este video');
+        }
+        video.visibility = visibility;
+        return this.videosRepository.save(video);
+     }
 
 }

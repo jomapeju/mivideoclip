@@ -66,3 +66,12 @@ export const createComment = async (videoId: string, content: string) => {
         throw new Error('Error desconocido al publicar el comentario.');
     }
 };
+
+export const updateVideoVisibility = async (videoId: string, visibility: "PUBLIC" | "PRIVATE") => {
+  try {
+    const res = await api.put(`/videos/${videoId}/visibility`, { visibility });
+    return res.data;
+  } catch (error) {
+    throw new Error("No se pudo actualizar la privacidad del video.");
+  }
+};

@@ -9,6 +9,7 @@ import {
     ArrayMaxSize, // <-- Nuevo
     ArrayMinSize  // <-- Nuevo
 } from 'class-validator';
+import { VideoVisibility } from '../entities/video.entity';
 
 export class CreateVideoDto {
     @IsString()
@@ -30,5 +31,8 @@ export class CreateVideoDto {
     @ArrayMaxSize(4, { message: 'El máximo permitido es de 4 categorías por video.' })
     @IsUUID('4', { each: true, message: 'Cada ID de categoría debe ser un UUID válido.' })
     categoryIds: string[];
+
+    @IsString()
+    visibility: VideoVisibility;;
 
 }

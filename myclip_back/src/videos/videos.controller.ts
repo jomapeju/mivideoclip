@@ -4,6 +4,7 @@ import {
     Controller, 
     Post, 
     Get,
+    Put,
     Param,
     Body, 
     UseGuards, 
@@ -22,6 +23,7 @@ import { CreateVideoDto } from './dto/create-video.dto';
 import * as path from 'path'; // Para manejar rutas de archivos
 import { Video } from './entities/video.entity';
 import { Category } from './entities/category.entity';
+import { VideoVisibility } from './entities/video.entity';
 
 // TODO: Configuración de Multer para guardar el archivo en la carpeta 'uploads'
 const multerOptions = {
@@ -81,10 +83,12 @@ export class VideosController {
       return this.videosService.searchVideos(q);
     }
 
-    @Get(':id') 
-    async getOneVideo(@Param('id') id: string): Promise<Video> {
-        return this.videosService.findOne(id);
+    @Get(':id')
+    async getOneVideo(@Param('id') id: string, @Request() req): Promise<Video> {
+      const userId = req.user?.user_id || req.user?.id || req.user?.sub || null;
+      return this.videosService.findOne(id, userId);
     }
+
     
     @UseGuards(JwtAuthGuard)
     @Post('upload')
@@ -129,6 +133,7 @@ export class VideosController {
         songTitle: body.songTitle,
         description: body.description,
         categoryIds: categoryIds,
+        visibility: body.visibility,
       };
 
       return this.videosService.uploadAndRegister(createVideoDto, file, userId, categoryIds);
@@ -150,4 +155,17 @@ export class VideosController {
       video: updatedVideo,
     };
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Put(':id/visibility')
+  async updateVisibility(
+    @Param('id') videoId: string,
+    @Body('visibility') visibility: VideoVisibility,
+    @Request() req,
+  ) {
+    const userId = req.user?.user_id || req.user?.id || req.user?.sub;
+    return this.videosService.updateVisibility(videoId, visibility, userId);
+  }
+
+
 }

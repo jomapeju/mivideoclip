@@ -37,6 +37,9 @@ export const UploadForm = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [visibility, setVisibility] = useState<"PUBLIC" | "PRIVATE">("PUBLIC");
+
+
   // ================================
   //   FILE PREVIEW
   // ================================
@@ -84,6 +87,8 @@ export const UploadForm = () => {
       formData.append("songTitle", songTitle);
       formData.append("description", description);
       formData.append("categoryIds", JSON.stringify(selectedCategories));
+      formData.append("visibility", visibility);
+
 
       const res = await api.post<VideoResponse>("/videos/upload", formData, {
         onUploadProgress: (e) => {
@@ -140,13 +145,13 @@ export const UploadForm = () => {
 
       {/* TITLE */}
       <div>
-        <label className="flex items-center text-sm font-medium text-gray-700 mb-1 gap-1">
+        <label className="flex items-center text-sm font-medium text-gray-700 mb-1 gap-1 ">
           <FilmIcon className="h-4 w-4" />
           Título del Video
         </label>
         <input
           type="text"
-          className="w-full border border-gray-300 rounded-lg p-3 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full border border-gray-300 rounded-lg p-3 focus:ring-blue-500 focus:border-blue-500 text-gray-800"
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -161,7 +166,7 @@ export const UploadForm = () => {
         </label>
         <input
           type="text"
-          className="w-full border p-3 rounded-lg"
+          className="w-full border p-3 rounded-lg text-gray-800"
           required
           value={songTitle}
           onChange={(e) => setSongTitle(e.target.value)}
@@ -176,11 +181,27 @@ export const UploadForm = () => {
         </label>
         <textarea
           rows={3}
-          className="w-full border p-3 rounded-lg"
+          className="w-full border p-3 rounded-lg text-gray-800"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
       </div>
+
+      {/* VISIBILITY */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Privacidad
+        </label>
+        <select
+          value={visibility}
+          onChange={(e) => setVisibility(e.target.value as any)}
+          className="w-full border p-3 rounded-lg text-gray-800"
+        >
+          <option value="PUBLIC">Público</option>
+          <option value="PRIVATE">Privado</option>
+        </select>
+      </div>
+
 
       {/* FILE UPLOAD */}
       <div>

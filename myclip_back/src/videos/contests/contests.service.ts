@@ -17,6 +17,7 @@ import { Video } from '../entities/video.entity';
 import { CreateContestDto } from './dto/create-contest.dto';
 import { UpdateContestDto } from './dto/update-contest.dto';
 import { ContestVote } from '../entities/contest-vote.entity';
+import { VideoVisibility } from '../entities/video.entity';
 
 @Injectable()
 export class ContestsService {
@@ -123,6 +124,11 @@ export class ContestsService {
       throw new NotFoundException('Vídeo no encontrado');
     }
 
+    if (video.visibility === VideoVisibility.PRIVATE) {
+      throw new BadRequestException('No puedes inscribir un video privado en un concurso.');
+    }
+
+
     if (video.user_id !== userId) {
       throw new ForbiddenException(
         'Solo puedes inscribir vídeos que te pertenecen',
@@ -184,7 +190,8 @@ export class ContestsService {
       where: { contestId },
       relations: ['video', 'video.user'],
       order: { createdAt: 'ASC' },
-    });
+    }).then(list => list.filter(sub => sub.video.visibility === VideoVisibility.PUBLIC));
+
   }
 
   /**
@@ -298,6 +305,7 @@ export class ContestsService {
         'vote.contestId = cv.contestId AND vote.videoId = cv.videoId',
       )
       .where('cv.contestId = :contestId', { contestId })
+      .andWhere('video.visibility = :vis', { vis: VideoVisibility.PUBLIC })      
       .groupBy('cv.id')
       .addGroupBy('video.video_id')
       .orderBy('COUNT(vote.id)', 'DESC')

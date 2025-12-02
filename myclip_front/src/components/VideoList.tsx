@@ -9,6 +9,7 @@ import {
   XCircleIcon,
   ArrowPathIcon,
 } from '@heroicons/react/24/solid';
+import { updateVideoVisibility } from '../services/videos.service';
 
 interface Video {
   video_id: string;
@@ -18,6 +19,8 @@ interface Video {
   createdAt: string;
   thumbnailUrl?: string;
   streamUrlHls?: string;
+  visibility?: "PUBLIC" | "PRIVATE";
+
 }
 
 export const VideoList = () => {
@@ -60,6 +63,7 @@ export const VideoList = () => {
       </span>
     );
   };
+  
 
   // 🕒 Loading
   if (loading)
@@ -110,6 +114,16 @@ export const VideoList = () => {
             <div className="absolute top-2 left-2">
               <StatusBadge status={video.status} />
             </div>
+            <div className="absolute top-2 right-2">
+              <span className={`
+                px-2 py-1 text-xs font-semibold rounded-full border 
+                ${video.visibility === "PUBLIC"
+                  ? "bg-green-100 text-green-800 border-green-300"
+                  : "bg-gray-300 text-gray-800 border-gray-400"}
+              `}>
+                {video.visibility === "PUBLIC" ? "Público" : "Privado"}
+              </span>
+            </div>
           </div>
 
           {/* BODY */}
@@ -153,6 +167,27 @@ export const VideoList = () => {
               </span>
             )}
 
+            <button
+              onClick={async () => {
+                try {
+                  const newVisibility =
+                    video.visibility === "PUBLIC" ? "PRIVATE" : "PUBLIC";
+
+                  await updateVideoVisibility(video.video_id, newVisibility);
+
+                  setVideos((prev) =>
+                    prev.map((v) =>
+                      v.video_id === video.video_id ? { ...v, visibility: newVisibility } : v
+                    )
+                  );
+                } catch {
+                  alert("No se pudo actualizar la privacidad.");
+                }
+              }}
+              className="text-sm px-3 py-1 rounded border bg-gray-100 hover:bg-gray-200 text-gray-900"
+            >
+              {video.visibility === "PUBLIC" ? "Hacer Privado" : "Hacer Público"}
+            </button>
           </div>
         </div>
       ))}

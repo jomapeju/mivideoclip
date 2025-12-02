@@ -41,7 +41,7 @@ export default async function HomePage() {
       {/* ------------------------------ */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold text-gray-900">🎬 Videos Recientes</h2>
+          <h2 className="text-3xl font-bold text-white-900">🎬 Videos Recientes</h2>
         </div>
 
         <VideoGrid videos={latest} />
@@ -51,7 +51,7 @@ export default async function HomePage() {
       {/* 🔥 POPULARES */}
       {/* ------------------------------ */}
       <section className="space-y-6">
-        <h2 className="text-3xl font-bold text-gray-900">🔥 Populares</h2>
+        <h2 className="text-3xl font-bold text-white-900">🔥 Populares</h2>
         <VideoGrid videos={popular} />
       </section>
 
@@ -59,7 +59,7 @@ export default async function HomePage() {
       {/* 🏆 CONCURSOS ACTIVOS */}
       {/* ------------------------------ */}
       <section className="space-y-6">
-        <h2 className="text-3xl font-bold text-gray-900">🏆 Concursos Activos</h2>
+        <h2 className="text-3xl font-bold text-white-900">🏆 Concursos Activos</h2>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {contests.length === 0 && (
@@ -98,7 +98,7 @@ export default async function HomePage() {
       {/* 📂 CATEGORÍAS */}
       {/* ------------------------------ */}
       <section className="space-y-6 pb-10">
-        <h2 className="text-3xl font-bold text-gray-900">📂 Categorías</h2>
+        <h2 className="text-3xl font-bold text-white-900">📂 Categorías</h2>
 
         <div className="flex flex-wrap gap-3">
           {categories.map((c: any) => (

@@ -14,6 +14,11 @@ export enum VideoStatus {
   BLOCKED = 'BLOCKED',
 }
 
+export enum VideoVisibility {
+  PUBLIC = 'PUBLIC',
+  PRIVATE = 'PRIVATE',
+}
+
 @Entity({ name: 'videos' })
 export class Video {
     @PrimaryGeneratedColumn('uuid', { name: 'video_id' })
@@ -48,6 +53,13 @@ export class Video {
 
     @Column({ type: 'enum', enum: VideoStatus, default: VideoStatus.PENDING })
     status: VideoStatus;
+
+    @Column({
+      type: 'enum',
+      enum: VideoVisibility,
+      default: VideoVisibility.PUBLIC,
+    })
+    visibility: VideoVisibility;
 
     @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
     createdAt: Date;
